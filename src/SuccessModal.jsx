@@ -46,32 +46,32 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
         count: count
       }));
   
-    fetch('http://109.172.37.41:4000/order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        products: products,
-        tableNumber: tableNumber,
-        totalPrice: vaqt,
-        userId: 1
+      fetch('http://109.172.37.41:4000/order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          products: products,
+          tableNumber: tableNumber,
+          totalPrice: vaqt,
+          userId: 1
+        })
       })
-    })
-    .then(res => {
-      if (!res.ok) {
-        throw new Error('Buyurtma yuborishda xatolik yuz berdi');
-      }
-      return res.json();
-    })
-    .then(data => {
-      console.log('Buyurtma qo‘shildi:', data);
-      onClose();
-    })
-    .catch(err => {
-      console.error('Xatolik:', err);
-      setErrorMessage('Buyurtma yuborishda xatolik yuz berdi. Iltimos, qayta urinib ko‘ring.');
-    });
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Buyurtma yuborishda xatolik yuz berdi');
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log('Buyurtma qo‘shildi:', data);
+        onClose();
+      })
+      .catch(err => {
+        console.error('Xatolik:', err);
+        setErrorMessage('Buyurtma yuborishda xatolik yuz berdi. Iltimos, qayta urinib ko‘ring.');
+      });
   }
 
   return (

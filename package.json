@@ -14,7 +14,8 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-to-print": "^3.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -31,5 +32,13 @@
   "main": "eslint.config.js",
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alibek517/water-panel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alibek517/water-panel/issues"
+  },
+  "homepage": "https://github.com/alibek517/water-panel#readme"
 }

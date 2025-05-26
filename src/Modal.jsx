@@ -82,8 +82,8 @@
         <div className="display-spea-betw"><h3>Umumiy to‘lov: </h3> <h3> {formatPrice(totalPrice * 1.04)}</h3></div>
       </div>
 
-      <button className="close-btn" onClick={onClose}>X</button>
-      <button className="confirm-btn" onClick={onConfirm}>Tasdiqlash</button>
+      <button className="close-btn" onClick={onClose}>X</button>  
+         <button className="confirm-btn" onClick={onConfirm}>Tasdiqlash</button>
     </div>
   </div>
 

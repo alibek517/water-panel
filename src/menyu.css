@@ -309,3 +309,201 @@ ul{
 .hidden {
   display: none;
 }
+.order-manager {
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+.zakaz-card {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
+.done-btn, .review-btn, .counter button {
+  background-color: #007bff;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  margin-top: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.review-btn {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.order-modal {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}
+
+.editable-list {
+  list-style: none;
+  padding: 0;
+}
+
+.edit-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.counter {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+/* MODAL FON */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* MODAL KARTA */
+.modal-content {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  animation: modal-fade-in 0.3s ease-in-out;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* MODAL ANIMATSIYA */
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sarlavha */
+.modal-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  text-align: center;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+/* Har bir mahsulot bloki */
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.product-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #444;
+  flex: 1;
+}
+
+/* + - tugmalar guruhi */
+.counter-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.counter-buttons button {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background-color: #f0f0f0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.counter-buttons button:hover {
+  background-color: #d6d6d6;
+}
+
+.counter-buttons span {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* MODAL PASTKI TUGMALAR */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 2rem;
+}
+
+/* Saqlash va Bekor qilish */
+.modal-actions button {
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.save-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.save-btn:hover {
+  background-color: #43a047;
+}
+
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #e53935;
+}
+
+/* Scroll uchun stil (ixtiyoriy, zamonaviyroq ko'rinish uchun) */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 6px;
+}
+.modal-edit{
+  background-color: orange;
+  padding: 50px;
+  border-radius: 30px;
+}
+.plsmns{
+  background-color: burlywood;
+  color: #43a047;
+  
+}
