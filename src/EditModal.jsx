@@ -1,164 +1,180 @@
-import React, { useState, useEffect } from 'react';
-import './menyu.css';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
+import './editmodal.css';
 
-function EditModal({ zakaz, onClose }) {
-  const [orderItems, setOrderItems] = useState(zakaz?.orderItems || []);
-  const [newItem, setNewItem] = useState({ productId: "", count: 1 });
-  const [products, setProducts] = useState([]);
+const API_BASE = 'https://suddocs.uz';
 
-  // Загрузка блюд
+function EditModal({
+  show,
+  onClose,
+  order,
+  dishes,
+  newItem,
+  setNewItem,
+  onAddItem,
+  onChangeCount,
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  const modalRef = useRef(null);
+      const [topPosition, setTopPosition] = useState(100);
+      const [offsetY, setOffsetY] = useState(0);
+  
+      const handleMouseDown = (e) => {
+        setIsDragging(true);
+        const rect = modalRef.current.getBoundingClientRect();
+        setOffsetY(e.clientY - rect.top);
+      };
+  
+      const handleMouseMove = (e) => {
+        if (!isDragging) return;
+        setTopPosition(e.clientY - offsetY);
+      };
+  
+      const handleMouseUp = () => {
+        setIsDragging(false);
+      };
+  
+  if (!show || !order) return null;
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await axios.get('http://109.172.37.41:4000/product');
-        setProducts(response.data);
-      } catch (error) {
-        console.error("❌ Ошибка при загрузке блюд:", error);
-        alert("❌ Ошибка при загрузке блюд!");
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
-  const changeCount = (index, delta) => {
-    setOrderItems(prev => {
-      const updated = [...prev];
-      const item = updated[index];
-      const newCount = Math.max(0, item.count + delta);
-
-      if (newCount === 0) {
-        updated.splice(index, 1);
-      } else {
-        updated[index] = { ...item, count: newCount };
-      }
-
-      // Отправка на backend
-      axios.patch(`http://109.172.37.41:4000/order/${zakaz.id}`, {
-        orderItems: updated.map(i => ({
-          productId: i.productId,
-          count: i.count
-        })),
-        status: zakaz.status
-      }).then(res => {
-        console.log("✅ Обновлено на backend:", res.data);
-      }).catch(err => {
-        console.error("❌ Ошибка при PATCH (changeCount):", err.response?.data || err.message);
-        alert("❌ Ошибка при сохранении!");
-      });
-
-      return updated;
-    });
-  };
-
-  const handleAddItem = async () => {
-    if (!newItem.productId || newItem.count <= 0) {
-      alert("Выберите блюдо и количество больше 0.");
-      return;
-    }
-
-    const productId = parseInt(newItem.productId);
-    const updated = [...orderItems];
-    const existingIndex = updated.findIndex(item => item.productId === productId);
-
-    if (existingIndex >= 0) {
-      updated[existingIndex].count += newItem.count;
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
     } else {
-      updated.push({ productId, count: newItem.count });
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+  
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
-    setOrderItems(updated);
-
+  const handleSaveOrder = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await axios.patch(`http://109.172.37.41:4000/order/${zakaz.id}`, {
-        orderItems: updated,
-        status: zakaz.status
-      });
-
-      console.log("✅ Добавлено и сохранено:", response.data);
-      alert("✅ Блюдо добавлено и сохранено!");
-    } catch (error) {
-      console.error("❌ Ошибка при добавлении блюда:", error.response?.data || error.message);
-      alert("❌ Не удалось добавить блюдо.");
-    }
-
-    setNewItem({ productId: "", count: 1 });
-  };
-
-  const handleSave = async () => {
-    try {
-      const payload = orderItems.map(i => ({
-        productId: i.productId,
-        count: i.count
+      // Dinamik uzunlikdagi payload
+      const itemsPayload = order.orderItems.map(item => ({
+        productId: item.productId ?? item.product?.id,
+        count: item.count
       }));
 
-      const response = await axios.patch(`http://109.172.37.41:4000/order/${zakaz.id}`, {
-        orderItems: payload,
-        status: zakaz.status
-      });
+      // Agar backend products nomi yoki orderItems nomi kerak bo'lsa shu yerda o'zgartiring
+      const payload = { 
+        products: itemsPayload 
+      };
 
-      console.log("✅ Сохранено:", response.data);
-      alert("✅ Изменения сохранены!");
+      const res = await axios.put(
+        `${API_BASE}/order/${order.id}`,
+        payload,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      console.log('PUT response:', res.data);
       onClose();
-    } catch (error) {
-      console.error("❌ Ошибка при сохранении:", error.response?.data || error.message);
-      alert("❌ Не удалось сохранить изменения.");
+    } catch (err) {
+      console.error('❌ Saqlash xatosi:', err.response?.data || err.message);
+      setError('Saqlashda xatolik yuz berdi');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-edit">
-        <h2>Редактировать заказ — Стол {zakaz?.tableNumber || "?"}</h2>
-        <ul>
-          {orderItems.map((item, i) => {
-            const product = products.find(p => p.id === item.productId);
-            return (
-              <li key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {product?.name || "❓ Неизвестно"} — {item.count} шт.
-                <div style={{ display: 'flex', gap: '5px' }}>
-                  <button className='plsmns' onClick={() => changeCount(i, -1)}>-</button>
-                  <button className='plsmns' onClick={() => changeCount(i, 1)}>+</button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-        <div style={{ marginTop: '10px' }}>
+    <div className="edit-modal-overlay"
+    onMouseMove={handleMouseMove}
+    onMouseUp={handleMouseUp}>
+      <div
+  className="modal-content"
+  ref={modalRef}
+  onMouseDown={handleMouseDown}
+  style={{
+    position: 'absolute',
+    top: topPosition,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    cursor: isDragging ? 'grabbing' : 'grab',
+  }}
+>
+
+        
+
+        <h2>Buyurtmani tahrirlash (Stol №{order.tableNumber})</h2>
+
+        <div className="order-items">
+          {order.orderItems.map((item, idx) => (
+            <div key={item.id || idx} className="order-item">
+              <span>
+                {item.product?.name || 'Nomaʼlum'} — {item.count} dona
+              </span>
+              <div className="count-buttons">
+                <button 
+                  onClick={() => onChangeCount(item.id, -1)} 
+                  disabled={loading}
+                >–</button>
+                <button 
+                  onClick={() => onChangeCount(item.id, 1)} 
+                  disabled={loading}
+                >+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="new-item">
           <select
             value={newItem.productId}
-            onChange={(e) => setNewItem({ ...newItem, productId: e.target.value })}
+            onChange={e => setNewItem({ ...newItem, productId: e.target.value })}
+            disabled={loading}
+            className='select-dish'
           >
-            <option value="">Выберите блюдо</option>
-            {products.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+            <option value="">Taom tanlang</option>
+            {dishes.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
             ))}
-          </select>
+          </select><br /><br />
           <input
             type="number"
             min="1"
-            value={newItem.count}
-            onChange={(e) => setNewItem({ ...newItem, count: parseInt(e.target.value) || 1 })}
-            style={{ width: '50px', marginLeft: '5px' }}
+            className='input-count'
+            placeholder="Soni"
+            value={newItem.count === 0 ? '' : newItem.count}
+            onChange={e => setNewItem({ ...newItem, count: Number(e.target.value) })}
+            
+            disabled={loading}
           />
-          <button
-            onClick={handleAddItem}
-            style={{
-              padding: "5px 10px",
-              background: "#4CAF50",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-              marginLeft: '5px'
-            }}
-          >
-            Добавить
+          <button onClick={onAddItem} disabled={loading || !newItem.productId || !newItem.count}>
+
+            Qo‘shish
           </button>
         </div>
-        <div style={{ marginTop: '15px' }}>
-          <button onClick={handleSave} style={{ marginRight: '10px' }}>Сохранить</button>
-          <button onClick={onClose}>Отмена</button>
+
+        {error && <div className="error">{error}</div>}
+
+        <div className="modal-actions">
+          <button
+            onClick={handleSaveOrder}
+  className="save-button"
+            disabled={loading}
+          >
+            {loading ? 'Yuklanmoqda...' : '✅ Saqlash'}
+          </button>
+          <button
+  onClick={onClose}
+  className="cancel-button"
+
+            disabled={loading}
+          >❌ Bekor qilish</button>
         </div>
       </div>
     </div>

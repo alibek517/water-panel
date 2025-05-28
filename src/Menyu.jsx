@@ -1,10 +1,12 @@
 // Menyu.jsx
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './menyu.css';
 import Modal from './Modal';
 import SuccessModal from './SuccessModal';
-
+import EditModal from './EditModal';
+import exit from '/exit.png';
 
 function Menyu() {
     const [activeFilter, setActiveFilter] = useState("All");
@@ -23,10 +25,10 @@ function Menyu() {
   const [dishes, setDishes] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
-  const [newItem, setNewItem] = useState({ productId: "", count: 1 });
+  const [newItem, setNewItem] = useState({ productId: "", count: ' ' });
 
 
-  const API_BASE = "http://109.172.37.41:4000";
+  const API_BASE = "https://suddocs.uz";
 
   const showToastMessage = (message, type = "success") => {
     setToastMessage(message);
@@ -34,10 +36,20 @@ function Menyu() {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2000);
   };
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+
+    if (!storedToken) {
+      // Agar token yo'q bo'lsa, login sahifasiga qayt
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const changeStatus = async (id, newStatus) => {
     try {
-      await axios.patch(`${API_BASE}/order/${id}`, { status: newStatus });
+      await axios.put(`${API_BASE}/order/${id}`, { status: newStatus });
       setZakazlar(prev => prev.filter(order => order.id !== id));
     } catch (err) {
       console.error("Xatolik:", err);
@@ -84,32 +96,29 @@ const handleSaveOrder = async () => {
           .map((item) => ({
             productId: Number(item.productId || item.product?.id),
             count: Number(item.count),
-          }))
-          
-          ,
+          })),
       };
+      
 
       console.log("PUT so'rovi uchun ma'lumotlar:", updatedOrder);
 
-      const response = await axios.patch(
-        `http://109.172.37.41:4000/order/${editingOrder.id}`,
+      const response = await axios.put(
+        `https://suddocs.uz/order/${editingOrder.id}`,
         updatedOrder,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
+      
 
-      console.log("PATCH javobi:", response.data);
+      console.log("put javobi:", response.data);
 
-      setOrders(
-        orders.map((order) =>
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
           order.id === editingOrder.id
             ? { ...editingOrder, totalPrice }
             : order
         )
       );
+      
       setShowEditModal(false);
       setEditingOrder(null);
     } catch (err) {
@@ -131,8 +140,21 @@ const handleSaveOrder = async () => {
     });
   
     setShowEditModal(true);
-    setNewItem({ productId: "", count: 1 });
+    setNewItem({ productId: "", count: '' });
   };
+  
+  const fetchOrders = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/order`);
+      setOrders(response.data);
+    } catch (err) {
+      console.error("Buyurtmalarni olishda xatolik:", err);
+    }
+  };
+  
+  useEffect(() => {
+    fetchOrders();
+  }, []);
   
   const handleAddItem = () => {
     console.log("Yangi taom qo'shish:", newItem);
@@ -177,7 +199,7 @@ const handleSaveOrder = async () => {
         ]
       }));
     }
-    setNewItem({ productId: "", count: 1 });  
+    setNewItem({ productId: "", count: '' });  
   };
   const handleRemoveItem = (itemId) => {
     setEditingOrder(prev => ({
@@ -211,6 +233,12 @@ const handleSaveOrder = async () => {
     fetchData();
   }, []);
   
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
   
 
   const uniqueCategories = Array.from(
@@ -372,132 +400,15 @@ const handleSaveOrder = async () => {
           </section>
         )}
       </div>
-      {showEditModal && (
-        <div className="modal-overlay">
-          <div style={{paddingBottom: '20px'}} className="modal">
-            <h2>Buyurtma #{editingOrder?.id} ni tahrirlash</h2>
-            <div style={{
-              border: "1px solid rgb(82, 82, 82)",
-              padding: "10px",
-              borderRadius: "5px",
-            }}>
-              <h3 style={{marginTop: '0px'}}>Joriy taomlar:</h3>
-              {editingOrder?.orderItems.length ? (
-                editingOrder.orderItems.map((item) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    <img
-                      src={`http://109.172.37.41:4000${item.product?.image}`}
-                      alt={item.product?.name}
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        borderRadius: "5px",
-                        marginRight: "10px",
-                      }}
-                    />
-                    <span>
-                      {item.product?.name} (Soni: {item.count})
-                    </span>
-                    <button
-                      style={{
-                        color: "red",
-                        border: "1px solid red",
-                        padding: "5px",
-                        cursor: "pointer",
-                        marginLeft: "10px",
-                      }}
-                      onClick={() => handleRemoveItem(item.id)}
-                    >
-                      O'chirish
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <p>Taomlar yo'q.</p>
-              )}
-            </div>
+<img
+  onClick={logout}
+  className="exit-icon"
+  src={exit}
+  alt="exit"
+/>
 
-            <h3 style={{marginBottom: '0px'}}>Yangi taom qo'shish:</h3>
-            <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-              <select
-                value={newItem.productId}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, productId: e.target.value })
-                }
-                style={{ padding: "5px", width: "200px" }}
-              >
-                <option value="">Taom tanlang</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name} ({formatPrice(product.price)})
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min="1"
-                value={newItem.count}
-                onChange={(e) =>
-                  setNewItem({ ...newItem, count: parseInt(e.target.value) || 1 })
-                }
-                style={{ padding: "5px", width: "80px" }}
-                placeholder="Soni"
-              />
-              <button
-                onClick={handleAddItem}
-                style={{
-                  padding: "5px 10px",
-                  background: "#4CAF50",
-                  color: "white",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Qo'shish
-              </button>
-            </div>
 
-            <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-              <button
-                onClick={handleSaveOrder}
-                style={{
-                  padding: "10px 20px",
-                  background: "#4CAF50",
-                  color: "white",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Saqlash
-              </button>
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingOrder(null);
-                }}
-                style={{
-                  padding: "10px 20px",
-                  background: "#ccc",
-                  color: "black",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Bekor qilish
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      
 
       {showModal && (
         <Modal
@@ -507,18 +418,30 @@ const handleSaveOrder = async () => {
           onConfirm={handleConfirm}
         />
       )}
-{showEditModal && (
-  <EditOrderModal
-    order={editingOrder}
-    dishes={dishes}
-    onSave={handleSaveOrder}
-    onClose={() => setShowEditModal(false)}
-    onAddItem={handleAddItem}
-    onRemoveItem={handleRemoveItem}
-    newItem={newItem}
-    setNewItem={setNewItem}
-  />
+{showEditModal && editingOrder && (
+  <EditModal
+  show={showEditModal}
+  onClose={() => setShowEditModal(false)}
+  order={editingOrder}
+  dishes={dishes}
+  newItem={newItem}
+  setNewItem={setNewItem}
+  onAddItem={handleAddItem}
+  onRemoveItem={handleRemoveItem}
+  onChangeCount={(id, delta) => {
+    setEditingOrder(prev => ({
+      ...prev,
+      orderItems: prev.orderItems.map(item =>
+        item.id === id ? { ...item, count: Math.max(item.count + delta, 1) } : item
+      )
+    }));
+  }}
+  onSaveOrder={handleSaveOrder}
+/>
+
 )}
+
+
 
       {showSuccessModal && (
         <SuccessModal

@@ -55,7 +55,7 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
           products: products,
           tableNumber: tableNumber,
           totalPrice: vaqt,
-          userId: 1
+          userId: 2
         })
       })
       .then(res => {

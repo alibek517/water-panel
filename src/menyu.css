@@ -507,3 +507,372 @@ ul{
   color: #43a047;
   
 }
+/* CSS fayl (masalan App.css yoki style.css) */
+.exit-icon {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  width: 45px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+@media (max-width: 480px) {
+  .exit-icon {
+    width: 25px;
+    right: 25px;
+  }
+}
+@media (max-width: 330px) {
+  .exit-icon {
+    width: 20px;
+    right: 25px;
+  }
+}
+
+@media (max-width: 500px) {
+  .menu-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .hero-section {
+    height: 200px;
+  }
+
+  .hero-content h1 {
+    font-size: 28px;
+  }
+
+  .title-highlight {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .menu-card img {
+    height: 150px;
+  }
+  .menu-card .info h3 {
+    font-size: 18px;
+  }
+  .menu-card .info p {
+    font-size: 12px;
+  }
+  .menu-card .info .price {
+    font-size: 16px;
+  }
+  .zakaz-card {
+    padding: 15px;
+    margin: 10px;
+  }
+  .zakaz-title {
+    font-size: 18px;
+  }
+  .zakaz-item {
+    font-size: 14px;
+  }
+  .zakaz-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  .order-manager {
+    padding: 10px;
+  }
+  .done-btn, .review-btn, .counter button {
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+  .order-modal {
+    padding: 15px;
+  }
+  .editable-list {
+    font-size: 14px;
+  }
+  .product-name {
+    font-size: 14px;
+  }
+  .counter-buttons button {
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+  }
+  .counter-buttons span {
+    min-width: 20px;
+    font-size: 14px;
+  }
+  .modal-title {
+    font-size: 1.4rem;
+  }
+  .modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .modal-actions button {
+    width: 100%;
+    margin-top: 10px;
+  }
+  .save-btn, .cancel-btn {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+  .steam {
+    width: 30px;
+    height: 50px;
+  }
+  .steam2 { left: 48%; }
+  .steam3 { left: 52%; }
+  .icon-hero {
+    width: 24px;
+  }
+  .btnDiv {
+    margin: 20px;
+  }
+  .bttnn {
+    border: 1px solid #ff7a00;
+  }
+  .btnn {
+    background-color: #ff7a00;
+  }
+  .CatButton {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  .category-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .category-buttons {
+    gap: 8px;
+  }
+  .menu-title {
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+  .menu-card {
+    margin: 0 auto;
+    max-width: 90%;
+  }
+  .menu-card img {
+    height: 180px;
+  } 
+  .menu-card .info h3 {
+    font-size: 16px;
+  }
+  .menu-card .info p {
+    font-size: 12px;
+  }
+  .menu-card .info .price {
+    font-size: 14px;
+  }
+  .add-to-cart {
+    padding: 15px 0;
+  }
+  .add-to-cart button {
+    font-size: 16px;
+  }
+  .toast {
+    font-size: 14px;
+    padding: 10px 15px;
+  }
+  .error-message {
+    font-size: 12px;
+  }
+  .zakaz-card {
+    max-width: 90%;
+    padding: 15px;
+  }
+  .zakaz-title {
+    font-size: 16px;
+  }
+  .zakaz-item {
+    font-size: 12px;
+  }
+  .zakaz-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .order-manager {
+    padding: 10px;
+  }
+  .done-btn, .review-btn, .counter button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .order-modal {
+    padding: 10px;
+  }
+  .editable-list {
+    font-size: 12px;
+  }
+  .product-name {
+    font-size: 12px;
+  }
+  .counter-buttons button {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+  .counter-buttons span {
+    min-width: 18px;
+    font-size: 12px;
+  }
+  .modal-title {
+    font-size: 1.2rem;
+  }
+  .modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .modal-actions button {
+    width: 100%;
+    margin-top: 10px;
+  }
+  .save-btn, .cancel-btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  .modal-edit {
+    padding: 30px;
+  }
+  .plsmns {
+    background-color: #f0e68c;
+    color: #333;
+  }
+  .steam {
+    width: 20px;
+    height: 40px;
+  }
+  .steam2 { left: 46%; }
+  .steam3 { left: 50%; }
+  .icon-hero {
+    width: 20px;
+  }
+  .btnDiv {
+    margin: 10px;
+  }
+  .bttnn {
+    border: 1px solid #ff7a00;
+  }
+  .btnn {
+    background-color: #ff7a00;
+  }
+  .CatButton {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+
+  .category-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .category-buttons {
+    gap: 6px;
+  }
+  .menu-title {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+  .add-to-cart {
+    padding: 10px 0;
+  }
+  .add-to-cart button {
+    font-size: 14px;
+  }
+  .toast {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .error-message {
+    font-size: 10px;
+  }
+  .zakaz-card {
+    max-width: 95%;
+    padding: 10px;
+  }
+  .zakaz-title {
+    font-size: 14px;
+  }
+  .zakaz-item {
+    font-size: 10px;
+  }
+  .zakaz-btn {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+  .order-manager {
+    padding: 8px;
+  }
+  .done-btn, .review-btn, .counter button {
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+  .order-modal {
+    padding: 8px;
+  }
+  .bttnn{
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+  .btnn {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+  .editable-list {
+    font-size: 10px;
+  }
+  .product-name {
+    font-size: 10px;
+  }
+  .counter-buttons button {
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+  .counter-buttons span {
+    min-width: 16px;
+    font-size: 10px;
+  }
+  .modal-title {
+    font-size: 1rem;
+  }
+  .modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .modal-actions button {
+    width: 100%;
+    margin-top: 8px;
+  }
+  .save-btn, .cancel-btn {
+    padding: 0.4rem;
+    font-size: 0.7rem;
+  }
+}
+@media (max-width: 470px) {
+  .menu-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .hero-section {
+    height: 180px;
+  }
+
+  .hero-content h1 {
+    font-size: 24px;
+  }
+
+  .title-highlight {
+    font-size: 28px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .menu-card img {
+    width: 250px;
+    height: 140px;
+  }
+}

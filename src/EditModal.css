@@ -1,0 +1,204 @@
+
+  .select-dish{
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: white;
+    color: #333;
+  }
+  .input-count{
+    width: 60px;
+    padding: 6px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    text-align: center;
+  }
+  /* Modal oynaning asosiy qismi */
+  /* MODAL FON */
+.edit-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* MODAL KARTA */
+.modal-content {
+  background: #3a3f3f;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  animation: modal-fade-in 0.3s ease-in-out;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* MODAL ANIMATSIYA */
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+  
+  /* Kirish effekti */
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.8);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .edit-modal h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  /* Buyurtmalar ro'yxati */
+  .order-items-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+  }
+  
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .order-item span {
+    font-weight: 500;
+  }
+  
+  /* Soni o‘zgartirish inputi */
+  .order-item input {
+    width: 60px;
+    padding: 6px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    text-align: center;
+  }
+  
+  /* Tugmalar */
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .save-button,
+  .cancel-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  
+  .save-button {
+    background-color: #1eee0b;
+    color: white;
+  }
+  
+  .save-button:hover {
+    background-color: #087a16;
+  }
+  
+  .cancel-button {
+    background-color: #ed2f2f;
+    color: white;
+  }
+  
+  .cancel-button:hover {
+    background-color: #e90303;
+  }
+  @media (max-width: 600px) {
+    .edit-modal {
+        width: 95%;
+        padding: 16px;
+    }
+  
+    .order-item input {
+        width: 50px;
+        font-size: 14px;
+    }
+  
+    .save-button,
+    .cancel-button {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+  
+    .order-item {
+        align-items: flex-start;
+    }
+  
+    .order-item span {
+        margin-bottom: 4px;
+    }
+    .order-items-list {
+        max-height: 250px;
+    }
+  .edit-modal h2 {
+        font-size: 18px;
+    }
+  .modal-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+  .modal-actions button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+  .modal-actions button:last-child {
+        margin-bottom: 0;
+    }
+  .count-buttons{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .select-dish{
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: white;
+    color: #333;
+  }
+    .input-count{
+    width: 50px;
+    padding: 4px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    text-align: center;
+    }
+    
+  }
