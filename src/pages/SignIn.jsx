@@ -2,15 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SignIn.css';
 
-function generateToken(length = 40) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=';
-  let token = '';
-  for (let i = 0; i < length; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
-}
-
 const SignIn = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +17,7 @@ const SignIn = () => {
     try {
       const res = await fetch('https://suddocs.uz/user');
       if (!res.ok) throw new Error('Serverdan ma\'lumot olishda xatolik');
-      
+
       const users = await res.json();
 
       const foundUser = users.find(
@@ -37,13 +28,13 @@ const SignIn = () => {
       );
 
       if (foundUser) {
-        const token = generateToken();
-        localStorage.setItem('authToken', token);
         localStorage.setItem('userRole', foundUser.role);
         localStorage.setItem('user', JSON.stringify(foundUser));
-
-        navigate(`/menyu?token=${encodeURIComponent(token)}`);
-      } else {
+        localStorage.setItem('userId', foundUser.id);
+      
+        navigate(`/menyu`);
+      }
+       else {
         alert('Foydalanuvchi topilmadi yoki parol noto‘g‘ri!');
       }
     } catch (error) {
@@ -54,25 +45,23 @@ const SignIn = () => {
 
   return (
     <div className="signin-container">
-      <h1 className='kirish'>Ofitsiant sifatida tizimga kirish</h1>
+      <h1 className="kirish">Ofitsiant sifatida tizimga kirish</h1>
       <form onSubmit={handleSignIn}>
         <label htmlFor="username">Username</label>
         <input
           type="text"
-          name="username"
           id="username"
-          autoComplete="username"
           placeholder="Username"
           value={username}
           onChange={e => setUsername(e.target.value)}
           required
+          autoComplete="username"
         />
 
         <label htmlFor="password">Parol</label>
         <div className="password-field">
           <input
             id="password"
-            name="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Parol"
             value={password}
@@ -99,7 +88,7 @@ const SignIn = () => {
 
         <button type="submit">Sign In</button>
       </form>
-      <p className='yangi'>Yangi foydalanuvchi bo‘lsangiz, admin bilan bog‘laning.</p>
+      <p className="yangi">Yangi foydalanuvchi bo‘lsangiz, admin bilan bog‘laning.</p>
     </div>
   );
 };

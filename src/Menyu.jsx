@@ -1,5 +1,4 @@
-// Menyu.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './menyu.css';
@@ -12,6 +11,8 @@ function Menyu() {
     const [activeFilter, setActiveFilter] = useState("All");
   const [view, setView] = useState("menu");
     const [orders, setOrders] = useState([]);
+    const heroRef = useRef(null);
+  const [isSticky, setIsSticky] = useState(false);
   
   const [selectedCategory, setSelectedCategory] = useState('Barchasi');
   const [orderCounts, setOrderCounts] = useState({});
@@ -38,14 +39,6 @@ function Menyu() {
   };
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-
-    if (!storedToken) {
-      // Agar token yo'q bo'lsa, login sahifasiga qayt
-      navigate('/login');
-    }
-  }, [navigate]);
 
   const changeStatus = async (id, newStatus) => {
     try {
@@ -55,7 +48,17 @@ function Menyu() {
       console.error("Xatolik:", err);
     }
   };
+  useEffect(() => {
+    const handleScroll = () => {
+      if (heroRef.current) {
+        const heroBottom = heroRef.current.getBoundingClientRect().bottom;
+        setIsSticky(heroBottom <= 0);
+      }
+    };
 
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   
   const changeCount = (dishId, delta) => {
     setOrderCounts(prev => {
@@ -87,7 +90,7 @@ const handleSaveOrder = async () => {
       );
 
       const updatedOrder = {
-        tableNumber: editingOrder.tableNumber,
+        tableId: editingOrder.tableId,
         status: editingOrder.status,
         userId: editingOrder.userId,
         totalPrice,
@@ -191,10 +194,10 @@ const handleSaveOrder = async () => {
         orderItems: [
           ...prev.orderItems,
           {
-            id: `temp-${Date.now()}`, // vaqtinchalik ID
+            id: `temp-${Date.now()}`,
             productId: parseInt(newItem.productId),
             count: newItem.count,
-            product: product // to'liq mahsulot ma'lumotlari
+            product: product 
           }
         ]
       }));
@@ -221,7 +224,6 @@ const handleSaveOrder = async () => {
         const readyOrders = (ordersRes.data || []).filter(item => item.status === "READY");
         setZakazlar(readyOrders);
   
-        // 👉 BU YERGA QO‘SHING
         setOrders(ordersRes.data || []);
   
       } catch (error) {
@@ -233,13 +235,7 @@ const handleSaveOrder = async () => {
     fetchData();
   }, []);
   
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
-  
+
 
   const uniqueCategories = Array.from(
     new Map(
@@ -264,7 +260,7 @@ const handleSaveOrder = async () => {
   return (
     <div className='divManyu'>
       <div className="content">
-        <div className='hero-section'>
+        <div ref={heroRef} className='hero-section'>
           <div className='overlay' />
           <div className='steam steam1' />
           <div className='steam steam2' />
@@ -278,7 +274,7 @@ const handleSaveOrder = async () => {
             <p className='subtitle'>Har bir taomda mehr, mazza va an'anaviylik</p>
           </div>
         </div>
-
+        <div className={`btttnss ${isSticky ? "fixed margin-top" : ""}`}>
         <div className='btnDiv'>
           <button className={view === "menu" ? "CatButton active" : "CatButton"} onClick={() => setView("menu")}>Taomlar menyusi</button>
           <button className={view === "order" ? "CatButton active" : "CatButton"} onClick={() => setView("order")}>Zakaz yaratish</button>
@@ -287,17 +283,18 @@ const handleSaveOrder = async () => {
         </div>
 
         {(view === "menu" || view === "order") && (
-          <div className="category-container">
+          <div className='count-controls'>
             <button className={`category-btn ${selectedCategory === 'Barchasi' ? 'active' : ''}`} onClick={() => setSelectedCategory('Barchasi')}>
               Barchasi
             </button>
             {uniqueCategories.map(category => (
               <button key={category.id} className={`category-btn ${selectedCategory === category.name ? 'active' : ''}`} onClick={() => setSelectedCategory(category.name)}>
                 {category.name}
-              </button>
-            ))}
+             </button>
+             ))}
           </div>
         )}
+        </div>
 
 {view === "edit" && (
   <div>
@@ -311,7 +308,7 @@ const handleSaveOrder = async () => {
         .filter(item => ['PENDING', 'COOKING', 'READY', 'COMPLETED'].includes(item.status))
         .map(item => (
           <div key={item.id} className="zakaz-card">
-            <h3 className="zakaz-title">🪑 Stol raqami: {item.tableNumber}</h3>
+            <h3 className="zakaz-title">🪑 Stol raqami: {item.tableId}</h3>
             <ul>
               {item.orderItems.map((orderItem, idx) => (
                 <li key={idx}>
@@ -339,7 +336,7 @@ const handleSaveOrder = async () => {
             ) : (
               zakazlar.map(item => (
                 <div key={item.id} className="zakaz-card">
-                  <h3 className="zakaz-title">Stol: {item.tableNumber}</h3>
+                  <h3 className="zakaz-title">Stol: {item.tableId}</h3>
                   <ul className="zakaz-list">
                     {item.orderItems.map((p, i) => (
                       <li key={i} className="zakaz-item">{p.product.name} — {p.count} dona</li>
@@ -401,14 +398,11 @@ const handleSaveOrder = async () => {
         )}
       </div>
 <img
-  onClick={logout}
+  onClick={() => navigate('/logout')}
   className="exit-icon"
   src={exit}
   alt="exit"
-/>
-
-
-      
+/>    
 
       {showModal && (
         <Modal

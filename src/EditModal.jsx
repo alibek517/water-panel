@@ -19,25 +19,26 @@ function EditModal({
   const [isDragging, setIsDragging] = useState(false);
   
   const modalRef = useRef(null);
-      const [topPosition, setTopPosition] = useState(100);
-      const [offsetY, setOffsetY] = useState(0);
-  
-      const handleMouseDown = (e) => {
-        setIsDragging(true);
-        const rect = modalRef.current.getBoundingClientRect();
-        setOffsetY(e.clientY - rect.top);
-      };
-  
-      const handleMouseMove = (e) => {
-        if (!isDragging) return;
-        setTopPosition(e.clientY - offsetY);
-      };
-  
-      const handleMouseUp = () => {
-        setIsDragging(false);
-      };
-  
+  const [topPosition, setTopPosition] = useState(100);
+  const [offsetY, setOffsetY] = useState(0);
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    const rect = modalRef.current.getBoundingClientRect();
+    setOffsetY(e.clientY - rect.top);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setTopPosition(e.clientY - offsetY);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   if (!show || !order) return null;
+
   useEffect(() => {
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
@@ -51,7 +52,7 @@ function EditModal({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging]);
-  
+
   useEffect(() => {
     const handleKeyDown = e => {
       if (e.key === 'Escape') onClose();
@@ -64,13 +65,13 @@ function EditModal({
     setLoading(true);
     setError(null);
     try {
-      // Dinamik uzunlikdagi payload
       const itemsPayload = order.orderItems.map(item => ({
+        id: item.id, 
         productId: item.productId ?? item.product?.id,
-        count: item.count
+        count: item.count,
+        status: item.status || 'PENDING',
       }));
 
-      // Agar backend products nomi yoki orderItems nomi kerak bo'lsa shu yerda o'zgartiring
       const payload = { 
         products: itemsPayload 
       };
@@ -92,30 +93,29 @@ function EditModal({
 
   return (
     <div className="edit-modal-overlay"
-    onMouseMove={handleMouseMove}
-    onMouseUp={handleMouseUp}>
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}>
       <div
-  className="modal-content"
-  ref={modalRef}
-  onMouseDown={handleMouseDown}
-  style={{
-    position: 'absolute',
-    top: topPosition,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    cursor: isDragging ? 'grabbing' : 'grab',
-  }}
->
-
-        
-
-        <h2>Buyurtmani tahrirlash (Stol №{order.tableNumber})</h2>
+        className="modal-content"
+        ref={modalRef}
+        onMouseDown={handleMouseDown}
+        style={{
+          position: 'absolute',
+          top: topPosition,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+      >
+        <h2>Buyurtmani tahrirlash (Stol №{order.tableId})</h2>
 
         <div className="order-items">
           {order.orderItems.map((item, idx) => (
             <div key={item.id || idx} className="order-item">
               <span>
                 {item.product?.name || 'Nomaʼlum'} — {item.count} dona
+                {' '}
+                <small>({item.status})</small>
               </span>
               <div className="count-buttons">
                 <button 
@@ -150,11 +150,9 @@ function EditModal({
             placeholder="Soni"
             value={newItem.count === 0 ? '' : newItem.count}
             onChange={e => setNewItem({ ...newItem, count: Number(e.target.value) })}
-            
             disabled={loading}
           />
           <button onClick={onAddItem} disabled={loading || !newItem.productId || !newItem.count}>
-
             Qo‘shish
           </button>
         </div>
@@ -164,15 +162,14 @@ function EditModal({
         <div className="modal-actions">
           <button
             onClick={handleSaveOrder}
-  className="save-button"
+            className="save-button"
             disabled={loading}
           >
             {loading ? 'Yuklanmoqda...' : '✅ Saqlash'}
           </button>
           <button
-  onClick={onClose}
-  className="cancel-button"
-
+            onClick={onClose}
+            className="cancel-button"
             disabled={loading}
           >❌ Bekor qilish</button>
         </div>

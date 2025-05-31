@@ -16,8 +16,6 @@
     border: 1px solid #ccc;
     text-align: center;
   }
-  /* Modal oynaning asosiy qismi */
-  /* MODAL FON */
 .edit-modal-overlay {
   position: fixed;
   inset: 0;
@@ -29,7 +27,6 @@
   z-index: 9999;
 }
 
-/* MODAL KARTA */
 .modal-content {
   background: #3a3f3f;
   padding: 2rem;
@@ -42,7 +39,6 @@
   overflow-y: auto;
 }
 
-/* MODAL ANIMATSIYA */
 @keyframes modal-fade-in {
   from {
     opacity: 0;
@@ -54,7 +50,6 @@
   }
 }
   
-  /* Kirish effekti */
   @keyframes scaleIn {
     from {
       transform: scale(0.8);
@@ -72,7 +67,6 @@
     text-align: center;
   }
   
-  /* Buyurtmalar ro'yxati */
   .order-items-list {
     max-height: 300px;
     overflow-y: auto;
@@ -92,7 +86,6 @@
     font-weight: 500;
   }
   
-  /* Soni o‘zgartirish inputi */
   .order-item input {
     width: 60px;
     padding: 6px;
@@ -102,7 +95,6 @@
     text-align: center;
   }
   
-  /* Tugmalar */
   .modal-actions {
     display: flex;
     justify-content: flex-end;
