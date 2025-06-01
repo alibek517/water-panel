@@ -70,3 +70,21 @@
   background-color: green;
 }
 
+.complete-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.complete-btn:hover {
+  background-color: #45a049;
+}
+
+.complete-btn:active {
+  transform: scale(0.95);
+}
