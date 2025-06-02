@@ -675,7 +675,7 @@ function Menyu() {
                     <ul>
                       {tableGroup.items.map((orderItem, idx) => (
                         <li key={`orderitem-${orderItem.id}`}>
-                          <div className="item-info">
+                          <div className="item-info-lkjhg">
                             <span>
                               <strong>{orderItem.product?.name || "Noma'lum taom"}</strong> 
                               - {orderItem.count} dona

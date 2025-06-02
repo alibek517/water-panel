@@ -5,15 +5,21 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
   const [tableId, setTableId] = useState('');
   const [tables, setTables] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const errorTimeoutRef = useRef(null);
 
   useEffect(() => {
+    setIsLoading(true);
     fetch('https://suddocs.uz/tables/')
       .then(res => res.json())
       .then(data => {
         setTables(data.data || data);
+        setIsLoading(false);
       })
-      .catch(err => console.error('Stollarni olishda xatolik:', err));
+      .catch(err => {
+        console.error('Stollarni olishda xatolik:', err);
+        setIsLoading(false);
+      });
   }, []);
 
   function showError(msg) {
@@ -23,7 +29,7 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
     }
     errorTimeoutRef.current = setTimeout(() => {
       setErrorMessage('');
-    }, 3000);
+    }, 4000);
   }
 
   function handleConfirm() {
@@ -31,7 +37,7 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
     const matchedTable = tables.find(t => parseInt(t.number) === enteredNumber);
 
     if (!enteredNumber || !matchedTable) {
-      showError('To‘g‘ri stol raqamini kiriting.');
+      showError('To\'g\'ri stol raqamini kiriting.');
       return;
     }
 
@@ -40,6 +46,7 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
       return;
     }
 
+    setIsLoading(true);
     onSuccess(true);
     sendOrder(matchedTable.id);
   }
@@ -85,7 +92,7 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
         return res.json();
       })
       .then(data => {
-        console.log('Buyurtma qo‘shildi:', data);
+        console.log('Buyurtma qo\'shildi:', data);
         return fetch(`https://suddocs.uz/tables/${tableId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -97,31 +104,74 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
         return res.json();
       })
       .then(() => {
+        setIsLoading(false);
         onClose();
       })
       .catch(err => {
         console.error('Xatolik:', err);
+        setIsLoading(false);
         showError(err.message);
       });
   }
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
-        <h2>Nechanchi stolga buyurtma?</h2>
-        <input
-          type="number"
-          value={tableId}
-          onChange={(e) => setTableId(e.target.value)}
-          placeholder="Stol raqami"
-          min="1"
-        />
-        {errorMessage && (
-          <p className="error-message">{errorMessage}</p>
-        )}
-        <div className="button-group">
-          <button className="close-btn" onClick={onClose}>Orqaga</button>
-          <button className="confirm-btn" onClick={handleConfirm}>Tasdiqlash</button>
+      <div className="modal-content table-modal">
+        <div className="modal-header">
+          <h2 className="modal-title">🪑 Stol tanlash</h2>
+        </div>
+        
+        <div className="table-content">
+          <p className="table-instruction">Buyurtmangiz qaysi stolga?</p>
+          
+          <div className="input-group">
+            <label htmlFor="tableNumber" className="input-label">
+              Stol raqami
+            </label>
+            <input
+              id="tableNumber"
+              type="number"
+              value={tableId}
+              onChange={(e) => setTableId(e.target.value)}
+              placeholder="Stol raqamini kiriting"
+              min="1"
+              className={`table-input ${errorMessage ? 'error' : ''}`}
+              disabled={isLoading}
+            />
+          </div>
+
+          {errorMessage && (
+            <div className="error-message">
+              <span className="error-icon">⚠️</span>
+              <span>{errorMessage}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-actions">
+          <button 
+            className="btn-secondary" 
+            onClick={onClose}
+            disabled={isLoading}
+          >
+            ← Orqaga
+          </button>
+          <button 
+            className="btn-primary" 
+            onClick={handleConfirm}
+            disabled={isLoading || !tableId}
+          >
+            {isLoading ? (
+              <>
+                <span className="loading-spinner"></span>
+                Yuborilmoqda...
+              </>
+            ) : (
+              <>
+                ✓ Tasdiqlash
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>
