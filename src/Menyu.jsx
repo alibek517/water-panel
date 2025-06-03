@@ -546,6 +546,10 @@ function Menyu() {
               MILLIY TAOMLARI
             </h1>
             <p className='subtitle'>Har bir taomda mehr, mazza va an'anaviylik</p>
+            <div>
+            <span style={{color:'black'}}>Ofitsant: </span>
+            <span style={{color:'black'}}>{localStorage.getItem('user') || 'Noma\'lum'}</span>
+          </div>
           </div>
         </div>
 

@@ -11,10 +11,9 @@ function Logout() {
   };
 
   const confirmLogout = () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userId');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
         navigate('/login');
       
   };

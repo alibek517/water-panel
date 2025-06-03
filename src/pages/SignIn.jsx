@@ -39,6 +39,9 @@ const SignIn = () => {
       if (foundUser) {
         // Store user data in component state instead of localStorage
         // Navigate to menu page
+        localStorage.setItem('userRole', foundUser.role);
+        localStorage.setItem('user', foundUser.name);
+        localStorage.setItem('userId', foundUser.id);
         window.location.href = '/menyu';
       } else {
         // Check if username exists but password is wrong
@@ -69,6 +72,10 @@ const SignIn = () => {
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="signin-container">
       {/* Animated background elements */}
@@ -93,7 +100,7 @@ const SignIn = () => {
           <div className="logo-container">
             <Coffee className="logo-icon" />
           </div>
-          <h1 className="kirish">Ofitsiant Paneli</h1>
+          <h1 className="kirish">Ofitsant Paneli</h1>
           <p className="subtitle">
             <Sparkles className="subtitle-icon" />
             Tizimga xush kelibsiz
@@ -149,10 +156,12 @@ const SignIn = () => {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={togglePasswordVisibility}
                 className="toggle-password"
+                title={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
               >
-                {showPassword ? <EyeOff /> : <Eye />}
+                {showPassword ? <EyeOff className="toggle-icon" /> : <Eye className="toggle-icon" />}
               </button>
             </div>
             {errors.password && <span className="error-message">{errors.password}</span>}
@@ -253,6 +262,12 @@ const SignIn = () => {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
           75% { transform: translateX(5px); }
+        }
+
+        @keyframes eyeToggle {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); }
         }
 
         /* Main Container */
@@ -509,20 +524,38 @@ const SignIn = () => {
           right: 1rem;
           top: 50%;
           transform: translateY(-50%);
-          width: 1.25rem;
-          height: 1.25rem;
+          width: 2rem;
+          height: 2rem;
           color: #9ca3af;
           cursor: pointer;
-          transition: color 0.2s ease;
+          transition: all 0.3s ease;
           display: flex;
           align-items: center;
           justify-content: center;
           background: none;
           border: none;
+          border-radius: 0.375rem;
+          padding: 0.25rem;
         }
 
         .toggle-password:hover {
           color: #a855f7;
+          background: rgba(168, 85, 247, 0.1);
+          transform: translateY(-50%) scale(1.05);
+        }
+
+        .toggle-password:active {
+          transform: translateY(-50%) scale(0.95);
+        }
+
+        .toggle-icon {
+          width: 1.25rem;
+          height: 1.25rem;
+          transition: transform 0.2s ease;
+        }
+
+        .toggle-password:hover .toggle-icon {
+          animation: eyeToggle 0.3s ease;
         }
 
         /* Submit Button */
