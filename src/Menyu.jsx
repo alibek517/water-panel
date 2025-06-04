@@ -273,60 +273,127 @@ function Menyu() {
   }, []);
 
   /** Buyurtmani saqlash (tahrirlaganidan keyin) **/
-  const handleSaveOrder = async () => {
-    if (!editingOrder) return;
+  /** Yangi taom qo'shish - yangi mahsulotlarga ID bermaslik **/
+/** Yangi taom qo'shish - faqat yangi mahsulotlar uchun PENDING status **/
+const handleAddItem = () => {
+  if (!editingOrder) return;
+  const { productId, count } = newItem;
+  if (!productId || count <= 0) {
+    alert("Iltimos, taom tanlang va sonini to'g'ri kiriting.");
+    return;
+  }
   
-    try {
-      // Mahsulotlarni qayta ishlash
-      const itemsPayload = editingOrder.orderItems.map((item) => ({
-        id: item.id || null, // Agar mavjud bo'lsa, ID saqlanadi, aks holda null
+  const prod = dishes.find((p) => p.id === Number(productId));
+  if (!prod) {
+    alert("Taom topilmadi.");
+    return;
+  }
+
+  // Yangi mahsulot ob'ektini yaratish - ID bermaslik!
+  const newOrderItem = {
+    // id yo'q - bu yangi mahsulot ekanligini bildiradi
+    productId: Number(prod.id),
+    product: prod, // Product ma'lumotlarini qo'shamiz
+    count: Number(count),
+    status: "PENDING", // Yangi mahsulot doim PENDING
+    isNew: true // Bu yangi qo'shilgan mahsulot ekanligini belgilash uchun
+  };
+
+  // EditingOrder ga qo'shish
+  setEditingOrder(prev => ({
+    ...prev,
+    orderItems: [...prev.orderItems, newOrderItem]
+  }));
+
+  // Formani tozalash
+  setNewItem({ productId: "", count: 1 });
+  showToastMessage("Yangi taom qo'shildi (PENDING status bilan)");
+};
+
+/** Buyurtmani saqlash - faqat yangi mahsulotlar PENDING bo'ladi **/
+const handleSaveOrder = async () => {
+  if (!editingOrder) return;
+
+  try {
+    // Mahsulotlarni qayta ishlash
+    const itemsPayload = editingOrder.orderItems.map((item) => {
+      return {
+        id: item.id || null, // Mavjud mahsulotlar uchun ID, yangi mahsulotlar uchun null
         productId: item.productId ?? item.product?.id,
         count: item.count,
-        status: item.status, // Mahsulotning mavjud statusi o'zgarmaydi
-      }));
-  
-      // Yuboriladigan payload
-      const payload = {
-        products: itemsPayload,
-        status: "COOKING", // Buyurtma umumiy statusi COOKING bo'ladi
+        // MUHIM: Faqat yangi qo'shilgan mahsulotlar (id yo'q yoki isNew=true) PENDING bo'ladi
+        // Mavjud mahsulotlarning statusini o'zgartirmaslik
+        status: !item.id || item.isNew ? "PENDING" : item.status
       };
-  
-      console.log("Yuborilayotgan payload:", JSON.stringify(payload, null, 2));
-  
-      // Serverga so'rov yuborish
-      const response = await axios.put(
-        `${API_BASE}/order/${editingOrder.id}`,
-        payload,
-        { headers: { "Content-Type": "application/json" } }
-      );
-  
-      console.log("Save response:", response.data);
-  
-      // Orders ro'yxatini yangilash
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === editingOrder.id
-            ? {
-                ...o,
-                status: "COOKING", // Buyurtma umumiy statusi yangilanadi
-                orderItems: response.data.orderItems,
-              }
-            : o
-        )
-      );
-  
-      // Tahrirlanayotgan buyurtmani yangilash
-      setEditingOrder((prev) =>
-        prev && { ...prev, status: "COOKING" }
-      );
-  
-      showToastMessage("Buyurtma saqlandi");
-      closeEditModal();
-    } catch (err) {
-      console.error("Save error:", err);
-      setError("Buyurtma saqlashda xato yuz berdi");
+    });
+
+    // Buyurtma statusini aniqlash
+    let orderStatus = editingOrder.status;
+    
+    // Faqat yangi mahsulot qo'shilgan bo'lsa va buyurtma tugallangan bo'lsa, uni qayta faollashtirish
+    const hasNewItems = editingOrder.orderItems.some(item => !item.id || item.isNew);
+    
+    if (hasNewItems) {
+      if (editingOrder.status === "COMPLETED") {
+        orderStatus = "COOKING"; // Tugallangan buyurtmaga yangi mahsulot qo'shilsa, uni qayta cooking qilish
+      } else if (editingOrder.status === "READY") {
+        orderStatus = "COOKING"; // Ready buyurtmaga yangi mahsulot qo'shilsa, uni cooking qilish
+      }
+      // Agar status PENDING yoki COOKING bo'lsa, o'zgartirishga hojat yo'q
     }
-  };
+
+    // Yuboriladigan payload
+    const payload = {
+      products: itemsPayload,
+      status: orderStatus,
+    };
+
+    console.log("Yuborilayotgan payload:", JSON.stringify(payload, null, 2));
+
+    // Serverga so'rov yuborish
+    const response = await axios.put(
+      `${API_BASE}/order/${editingOrder.id}`,
+      payload,
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    console.log("Save response:", response.data);
+
+    // Orders ro'yxatini yangilash
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === editingOrder.id
+          ? {
+              ...o,
+              status: orderStatus,
+              orderItems: response.data.orderItems || editingOrder.orderItems.map(item => ({
+                ...item,
+                status: !item.id || item.isNew ? "PENDING" : item.status
+              })),
+            }
+          : o
+      )
+    );
+
+    // Tahrirlanayotgan buyurtmani yangilash
+    setEditingOrder((prev) =>
+      prev && { 
+        ...prev, 
+        status: orderStatus,
+        orderItems: (response.data.orderItems || prev.orderItems).map(item => ({
+          ...item,
+          isNew: undefined // isNew flagini olib tashlash
+        }))
+      }
+    );
+
+    showToastMessage("Buyurtma saqlandi - faqat yangi qo'shilgan mahsulotlar PENDING statusida");
+    closeEditModal();
+  } catch (err) {
+    console.error("Save error:", err);
+    setError("Buyurtma saqlashda xato yuz berdi");
+  }
+};
 
   /** Buyurtmani tahrirlash uchun tayyorlash **/
   const handleEditOrder = useCallback((order) => {
@@ -336,55 +403,6 @@ function Menyu() {
     setError(null);
   }, []);
 
-  /** Yangi taom qo‘shish **/
-  const handleAddItem = async () => {
-    if (!editingOrder) return;
-    const { productId, count } = newItem;
-    if (!productId || count <= 0) {
-      alert("Iltimos, taom tanlang va sonini to'g'ri kiriting.");
-      return;
-    }
-    const prod = dishes.find((p) => p.id === Number(productId));
-    if (!prod) {
-      alert("Taom topilmadi.");
-      return;
-    }
-    const newOrderItem = { productId: Number(prod.id), count: Number(count) };
-    const items = [...editingOrder.orderItems, newOrderItem];
-    const totalPrice = calculateTotalPrice(items);
-    const payload = {
-      products: items.map((it) => ({
-        productId: Number(it.productId),
-        count: Number(it.count),
-      })),
-      tableId: editingOrder.tableId,
-      totalPrice,
-      userId: editingOrder.userId,
-    };
-
-    try {
-      await axios.put(`${API_BASE}/order/${editingOrder.id}`, payload, {
-        headers: { "Content-Type": "application/json" },
-      });
-      const updatedOrderRes = await axios.get(
-        `${API_BASE}/order/${editingOrder.id}`
-      );
-      const updated = updatedOrderRes.data;
-      setEditingOrder(updated);
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === updated.id
-            ? { ...updated, orderItems: updated.orderItems }
-            : o
-        )
-      );
-      setNewItem({ productId: "", count: 1 });
-      showToastMessage("Taom qo‘shildi");
-    } catch (err) {
-      console.error("Qo‘shish xatosi:", err);
-      setError("Taomni qo‘shishda xatolik yuz berdi");
-    }
-  };
 
   /** Buyurtma ichidan taom o‘chirish **/
   const handleRemoveItem = (itemId) => {
