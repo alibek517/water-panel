@@ -120,14 +120,6 @@ function Modal({ orderCounts, dishes, onClose, onConfirm }) {
               <span>Jami:</span>
               <span className="price-value">{formatPrice(totalPrice)}</span>
             </div>
-            <div className="pricing-row service">
-              <span>Xizmat haqi (4%):</span>
-              <span className="price-value">{formatPrice(totalPrice * 0.04)}</span>
-            </div>
-            <div className="pricing-row total">
-              <span>Umumiy to'lov:</span>
-              <span className="price-value">{formatPrice(totalPrice * 1.04)}</span>
-            </div>
           </div>
         </div>
 
