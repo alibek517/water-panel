@@ -218,7 +218,7 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
             <div className="available-tables">
               <p className="available-label">Bo'sh stollar:</p>
               <div className="table-numbers">
-                {availableTables.slice(0, 10).map((table) => (
+                {availableTables.slice(0, 11).map((table) => (
                   <button
                     key={table.id}
                     className={`table-number-btn ${tableId === table.number.toString() ? 'selected' : ''}`}
@@ -228,8 +228,8 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
                     {table.number}
                   </button>
                 ))}
-                {availableTables.length > 10 && (
-                  <span className="more-tables">+{availableTables.length - 10}</span>
+                {availableTables.length > 11 && (
+                  <span className="more-tables">+{availableTables.length - 11}</span>
                 )}
               </div>
             </div>

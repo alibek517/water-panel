@@ -221,7 +221,7 @@ padding-left: 5px;
 
 .table-instruction {
   font-size: 16px;
-  color: #000000;
+  color: #ffffff;
   margin-bottom: 24px;
   text-align: center;
 }
@@ -234,7 +234,7 @@ padding-left: 5px;
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #000000;
+  color: #ffffff;
   margin-bottom: 8px;
 }
 
@@ -266,7 +266,16 @@ padding-left: 5px;
   color: #9ca3af;
   cursor: not-allowed;
 }
+.table-number-btn{
+  background-color: firebrick;
+}
+.table-numbers{
+  display: flex;
 
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
 /* Error Message */
 .error-message {
   display: flex;
