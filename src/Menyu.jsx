@@ -272,9 +272,6 @@ function Menyu() {
     fetchOrders();
   }, []);
 
-  /** Buyurtmani saqlash (tahrirlaganidan keyin) **/
-  /** Yangi taom qo'shish - yangi mahsulotlarga ID bermaslik **/
-/** Yangi taom qo'shish - faqat yangi mahsulotlar uchun PENDING status **/
 const handleAddItem = () => {
   if (!editingOrder) return;
   const { productId, count } = newItem;
