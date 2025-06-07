@@ -536,7 +536,7 @@ function Menyu() {
         <ul>
           {tg.items.map((orderItem) => (
             <li key={orderItem.id} style={{ marginBottom: "0.5rem" }}>
-              <div style={{display:'flex', alignItems:'center',gap:'30px'}}>
+              <div style={{display:'flex', alignItems:'center',gap:'5px'}}>
               <strong style={{color:'#000'}}>{orderItem.product?.name || "Noma'lum taom"}</strong> 
               <strong style={{color:'#fff',background:'#000',padding:'15px',borderRadius:'30px'}}>  {orderItem.count} dona</strong>
               </div>
