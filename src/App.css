@@ -1,3 +1,4 @@
+@import "tailwindcss";
 .app {
   font-family: Arial, sans-serif;
   background-color: #f4f4f4;
@@ -21,6 +22,3 @@ h1 {
   margin-top: 20px;
 }
 
-.cart-button:hover {
-  background-color: #45a007;
-}

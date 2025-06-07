@@ -21,7 +21,6 @@ const SignIn = () => {
     const cleanPassword = password.trim();
 
     try {
-      // Simulate API call delay for loading state
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       const res = await fetch('https://suddocs.uz/user');
@@ -37,14 +36,11 @@ const SignIn = () => {
       );
 
       if (foundUser) {
-        // Store user data in component state instead of localStorage
-        // Navigate to menu page
         localStorage.setItem('userRole', foundUser.role);
         localStorage.setItem('user', foundUser.name);
         localStorage.setItem('userId', foundUser.id);
         window.location.href = '/menyu';
       } else {
-        // Check if username exists but password is wrong
         const usernameExists = users.find(
           (user) => user.username === cleanUsername && user.role === 'CASHIER'
         );
@@ -78,12 +74,10 @@ const SignIn = () => {
 
   return (
     <div className="signin-container">
-      {/* Animated background elements */}
       <div className="bg-element-1"></div>
       <div className="bg-element-2"></div>
       <div className="bg-element-3"></div>
 
-      {/* Floating particles */}
       <div className="particles-container">
         {[...Array(20)].map((_, i) => (
           <div key={i} className="particle" style={{
@@ -95,7 +89,6 @@ const SignIn = () => {
       </div>
 
       <div className="signin-card">
-        {/* Header */}
         <div className="signin-header">
           <div className="logo-container">
             <Coffee className="logo-icon" />
@@ -108,7 +101,6 @@ const SignIn = () => {
         </div>
 
         <div className="signin-form">
-          {/* Username field */}
           <div className="form-group">
             <label className="form-label">Foydalanuvchi nomi</label>
             <div className="input-container">
@@ -133,7 +125,6 @@ const SignIn = () => {
             {errors.username && <span className="error-message">{errors.username}</span>}
           </div>
 
-          {/* Password field */}
           <div className="form-group">
             <label className="form-label">Parol</label>
             <div className="password-field">
@@ -167,7 +158,6 @@ const SignIn = () => {
             {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
-          {/* Submit button */}
           <button
             type="button"
             onClick={handleSignIn}
@@ -185,7 +175,6 @@ const SignIn = () => {
           </button>
         </div>
 
-        {/* Footer */}
         <div className="signin-footer">
           <p className="yangi">
             Yangi foydalanuvchi bo'lsangiz,{' '}
@@ -193,13 +182,11 @@ const SignIn = () => {
           </p>
         </div>
 
-        {/* Decorative elements */}
         <div className="decoration-1"></div>
         <div className="decoration-2"></div>
       </div>
 
       <style jsx>{`
-        /* SignIn.css - Modern Bomb Style */
 
         * {
           margin: 0;
@@ -212,7 +199,6 @@ const SignIn = () => {
           overflow-x: hidden;
         }
 
-        /* Keyframes */
         @keyframes float {
           0%, 100% { 
             transform: translateY(0px) rotate(0deg); 
@@ -270,7 +256,6 @@ const SignIn = () => {
           100% { transform: scale(1); }
         }
 
-        /* Main Container */
         .signin-container {
           min-height: 100vh;
           width: 100vw;
@@ -283,7 +268,6 @@ const SignIn = () => {
           overflow: hidden;
         }
 
-        /* Animated Background Elements */
         .bg-element-1,
         .bg-element-2,
         .bg-element-3 {
@@ -317,7 +301,6 @@ const SignIn = () => {
           animation-delay: 0.5s;
         }
 
-        /* Floating Particles */
         .particle {
           position: absolute;
           width: 4px;
@@ -337,7 +320,6 @@ const SignIn = () => {
           animation-delay: 2s;
         }
 
-        /* Main Card */
         .signin-card {
           background: rgba(255, 255, 255, 0.1);
           backdrop-filter: blur(20px);
@@ -352,7 +334,6 @@ const SignIn = () => {
           z-index: 10;
         }
 
-        /* Card Shimmer Effect */
         .signin-card::before {
           content: '';
           position: absolute;
@@ -366,7 +347,6 @@ const SignIn = () => {
           pointer-events: none;
         }
 
-        /* Header */
         .signin-header {
           text-align: center;
           margin-bottom: 2rem;
@@ -412,7 +392,6 @@ const SignIn = () => {
           gap: 0.25rem;
         }
 
-        /* Form Styles */
         .signin-form {
           position: relative;
           z-index: 20;
@@ -481,7 +460,6 @@ const SignIn = () => {
           border-color: #a855f7;
         }
 
-        /* Error States */
         .form-input.error {
           border-color: #ef4444 !important;
           background: rgba(239, 68, 68, 0.1);
@@ -510,7 +488,6 @@ const SignIn = () => {
           height: 1rem;
         }
 
-        /* Password Field */
         .password-field {
           position: relative;
         }
@@ -558,7 +535,6 @@ const SignIn = () => {
           animation: eyeToggle 0.3s ease;
         }
 
-        /* Submit Button */
         .submit-btn {
           width: 100%;
           padding: 1rem;
@@ -593,7 +569,6 @@ const SignIn = () => {
           transform: none;
         }
 
-        /* Loading State */
         .loading-content {
           display: flex;
           align-items: center;
@@ -610,7 +585,6 @@ const SignIn = () => {
           animation: spin 1s linear infinite;
         }
 
-        /* Button Shine Effect */
         .submit-btn::before {
           content: '';
           position: absolute;
@@ -626,7 +600,6 @@ const SignIn = () => {
           left: 100%;
         }
 
-        /* Footer */
         .signin-footer {
           margin-top: 2rem;
           text-align: center;
@@ -650,7 +623,6 @@ const SignIn = () => {
           color: #c084fc;
         }
 
-        /* Decorative Elements */
         .decoration-1,
         .decoration-2 {
           position: absolute;
@@ -675,7 +647,6 @@ const SignIn = () => {
           background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
         }
 
-        /* Bottom Glow */
         .signin-container::after {
           content: '';
           position: absolute;
@@ -690,7 +661,6 @@ const SignIn = () => {
           z-index: 5;
         }
 
-        /* Responsive Design */
         @media (max-width: 640px) {
           .signin-container {
             padding: 0.5rem;
@@ -733,7 +703,6 @@ const SignIn = () => {
           }
         }
 
-        /* High contrast support */
         @media (prefers-contrast: high) {
           .signin-card {
             background: rgba(0, 0, 0, 0.8);
@@ -751,7 +720,6 @@ const SignIn = () => {
           }
         }
 
-        /* Reduced motion support */
         @media (prefers-reduced-motion: reduce) {
           *,
           *::before,

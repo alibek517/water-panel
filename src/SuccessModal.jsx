@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Users, Wifi, WifiOff, ArrowLeft, Check, AlertTriangle, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { socket } from './socket';
 import './Modal.css';
 
@@ -8,10 +9,10 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [showAllTables, setShowAllTables] = useState(false);
   const errorTimeoutRef = useRef(null);
 
   useEffect(() => {
-    // Stollarni yuklash
     setIsLoading(true);
     fetch('https://suddocs.uz/tables/')
       .then((res) => res.json())
@@ -27,7 +28,6 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
         setIsLoading(false);
       });
 
-    // WebSocket connection status
     const handleConnect = () => {
       console.log('🟢 SuccessModal: WebSocket ulandi');
       setIsConnected(true);
@@ -38,7 +38,6 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
       setIsConnected(false);
     };
 
-    // Response handlers for WebSocket events
     socket.on('create_order_response', (response) => {
       setIsLoading(false);
       if (response.status === 'ok') {
@@ -86,6 +85,10 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
     errorTimeoutRef.current = setTimeout(() => {
       setErrorMessage('');
     }, 5000);
+  }
+
+  function handleTableClick(table) {
+    setTableId(table.number.toString());
   }
 
   function handleConfirm() {
@@ -180,14 +183,19 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
   }
 
   const availableTables = tables.filter((table) => table.status !== 'busy');
+  
+  const tablesToShow = showAllTables ? availableTables : availableTables.slice(0, 10);
 
   return (
     <div className="modal-overlay">
       <div className="modal-content table-modal">
         <div className="modal-header">
-          <h2 className="modal-title">🪑 Stol tanlash</h2>
+          <h2 className="modal-title">
+            <Users size={24} />
+            Stol tanlash
+          </h2>
           <div className={`connection-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-            <span className="connection-dot"></span>
+            {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
             <span className="connection-text">{isConnected ? 'Online' : 'Offline'}</span>
           </div>
         </div>
@@ -218,18 +226,37 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
             <div className="available-tables">
               <p className="available-label">Bo'sh stollar:</p>
               <div className="table-numbers">
-                {availableTables.slice(0, 11).map((table) => (
+                {tablesToShow.map((table) => (
                   <button
                     key={table.id}
-                    className={`table-number-btn ${tableId === table.number.toString() ? 'selected' : ''}`}
-                    onClick={() => setTableId(table.number.toString())}
+                    className={`table-number-btn ${
+                      tableId === table.number.toString() ? 'selected' : ''
+                    } available`}
+                    onClick={() => handleTableClick(table)}
                     disabled={isLoading}
                   >
                     {table.number}
                   </button>
                 ))}
-                {availableTables.length > 11 && (
-                  <span className="more-tables">+{availableTables.length - 11}</span>
+                {!showAllTables && availableTables.length > 10 && (
+                  <button
+                    className="more-tables-btn"
+                    onClick={() => setShowAllTables(true)}
+                    disabled={isLoading}
+                  >
+                    <ChevronRight size={16} />
+                    +{availableTables.length - 10}
+                  </button>
+                )}
+                {showAllTables && availableTables.length > 10 && (
+                  <button
+                    className="show-less-btn"
+                    onClick={() => setShowAllTables(false)}
+                    disabled={isLoading}
+                  >
+                    <ChevronLeft size={16} />
+                    Kamroq ko'rsatish
+                  </button>
                 )}
               </div>
             </div>
@@ -237,7 +264,7 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
 
           {errorMessage && (
             <div className="error-message">
-              <span className="error-icon">⚠️</span>
+              <AlertTriangle size={16} className="error-icon" />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -245,17 +272,19 @@ function SuccessModal({ onClose, onSuccess, orderCounts, dishes }) {
 
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose} disabled={isLoading}>
-            ← Orqaga
+            <ArrowLeft size={16} />
+            Orqaga
           </button>
           <button className="btn-primary" onClick={handleConfirm} disabled={isLoading || !tableId}>
             {isLoading ? (
               <>
-                <span className="loading-spinner"></span>
+                <Loader2 size={16} className="loading-spinner" />
                 Yuborilmoqda...
               </>
             ) : (
               <>
-                ✓ Tasdiqlash
+                <Check size={16} />
+                Tasdiqlash
               </>
             )}
           </button>

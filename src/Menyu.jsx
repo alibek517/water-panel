@@ -1,10 +1,20 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { io } from "socket.io-client";
 import "./menyu.css";
 import Modal from "./Modal";
 import SuccessModal from "./SuccessModal";
 import exit from "/exit.png";
+import {
+  Armchair,
+  XCircle,
+  DollarSign,
+  Package,
+  BarChart,
+  Pencil,
+  CheckCircle,
+} from "lucide-react";
 
 function Menyu() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -31,11 +41,35 @@ function Menyu() {
 
   const heroRef = useRef(null);
   const [isSticky, setIsSticky] = useState(false);
+  const socketRef = useRef(null);
 
   const navigate = useNavigate();
   const API_BASE = "https://suddocs.uz";
+  const RESTAURANT_ID = "default";
+  const ROLE = "waiter";
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  /** Yordamchi funksiyalar **/
+  const buttons = [
+    { id: "menu", text: "Taomlar menyusi" },
+    { id: "order", text: "Zakaz yaratish" },
+    { id: "share", text: "Zakazni klentga yetkazish" },
+    { id: "edit", text: "Zakazni tahrirlash" },
+  ];
+
+  const handlePrevious = () => {
+    const newIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+    setCurrentIndex(newIndex);
+    setView(buttons[newIndex].id);
+  };
+
+  const handleNext = () => {
+    const newIndex = (currentIndex + 1) % buttons.length;
+    setCurrentIndex(newIndex);
+    setView(buttons[newIndex].id);
+  };
+
+  const currentButton = buttons[currentIndex];
+
   const showToastMessage = (message, type = "success") => {
     setToastMessage(message);
     setToastType(type);
@@ -57,7 +91,140 @@ function Menyu() {
     setError(null);
   };
 
-  /** Scroll bilan sticky navbar **/
+  useEffect(() => {
+    socketRef.current = io(API_BASE, {
+      path: "/socket.io",
+      transports: ["polling", "websocket"],
+      secure: true,
+      query: { role: ROLE, restaurantId: RESTAURANT_ID },
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("WebSocket connected:", socketRef.current.id);
+      socketRef.current.emit("fetch_kitchen_orders", { restaurantId: RESTAURANT_ID });
+    });
+
+    socketRef.current.on("connect_error", (err) => {
+      console.error("WebSocket connection error:", err);
+      showToastMessage("WebSocket ulanishida xato yuz berdi", "error");
+    });
+
+    socketRef.current.on("orderCreated", (order) => {
+      if (!order.orderItems) {
+        console.warn("Received order without orderItems:", order);
+        order.orderItems = [];
+      }
+      setOrders((prev) => [...prev, order]);
+      if (order.status === "READY" && order.orderItems.some((oi) => oi.status === "READY")) {
+        setZakazlar((prev) => [...prev, order]);
+      }
+      showToastMessage(`Yangi buyurtma qo'shildi: Stol ${order.table?.number || "N/A"}`);
+    });
+
+    socketRef.current.on("orderUpdated", (updatedOrder) => {
+      if (!updatedOrder.orderItems) {
+        console.warn("Received updated order without orderItems:", updatedOrder);
+        updatedOrder.orderItems = [];
+      }
+      setOrders((prev) =>
+        prev.map((o) => (o.id === updatedOrder.id ? updatedOrder : o))
+      );
+      setZakazlar((prev) =>
+        prev
+          .map((o) =>
+            o.id === updatedOrder.id ? updatedOrder : o
+          )
+          .filter((o) => o.status === "READY" && o.orderItems.some((oi) => oi.status === "READY"))
+      );
+      showToastMessage(`Buyurtma yangilandi: Stol ${updatedOrder.table?.number || "N/A"}`);
+    });
+
+    socketRef.current.on("orderItemStatusUpdated", (orderItem) => {
+      setOrders((prevOrders) =>
+        prevOrders.map((order) => {
+          if (!order.orderItems) {
+            console.warn(`Order ${order.id} has no orderItems during item status update:`, order);
+            return order;
+          }
+          const updatedItems = order.orderItems.map((it) =>
+            it.id === orderItem.id ? { ...it, status: orderItem.status } : it
+          );
+          if (order.orderItems.some((it) => it.id === orderItem.id)) {
+            const hasActive = updatedItems.some((i) =>
+              ["PENDING", "COOKING", "READY"].includes(i.status)
+            );
+            return {
+              ...order,
+              orderItems: updatedItems,
+              status: !hasActive && updatedItems.length > 0 ? "COMPLETED" : order.status,
+            };
+          }
+          return order;
+        })
+      );
+      setZakazlar((prev) =>
+        prev
+          .map((order) => {
+            if (!order.orderItems) {
+              console.warn(`Order ${order.id} has no orderItems in zakazlar update:`, order);
+              return order;
+            }
+            const updatedItems = order.orderItems.map((it) =>
+              it.id === orderItem.id ? { ...it, status: orderItem.status } : it
+            );
+            return { ...order, orderItems: updatedItems };
+          })
+          .filter((o) => o.status === "READY" && o.orderItems.some((oi) => oi.status === "READY"))
+      );
+      const parentOrder = orders.find((o) => o.orderItems?.some((it) => it.id === orderItem.id));
+      if (parentOrder) {
+        const remaining = parentOrder.orderItems.filter(
+          (it) => it.id !== orderItem.id && it.status === "READY"
+        );
+        if (remaining.length > 0) {
+          showToastMessage(
+            `Mahsulot yetkazildi. Stol ${parentOrder.table?.number || "N/A"}da ${remaining.length} ta taom qolmoqda.`
+          );
+        } else {
+          showToastMessage(
+            `Stol ${parentOrder.table?.number || "N/A"} - barcha taomlar yetkazildi! Zakaz yakunlandi.`
+          );
+        }
+      }
+    });
+
+    socketRef.current.on("orderDeleted", ({ id }) => {
+      setOrders((prev) => prev.filter((o) => o.id !== id));
+      setZakazlar((prev) => prev.filter((o) => o.id !== id));
+      showToastMessage(`Buyurtma o'chirildi: ID ${id}`);
+    });
+
+    socketRef.current.on("orderItemDeleted", ({ id }) => {
+      setOrders((prevOrders) =>
+        prevOrders.map((order) => ({
+          ...order,
+          orderItems: order.orderItems?.filter((it) => it.id !== id) || [],
+        }))
+      );
+      setZakazlar((prev) =>
+        prev
+          .map((order) => ({
+            ...order,
+            orderItems: order.orderItems?.filter((it) => it.id !== id) || [],
+          })
+          .filter((o) => o.status === "READY" && o.orderItems.some((oi) => oi.status === "READY"))
+      ));
+      showToastMessage(`Taom o'chirildi: ID ${id}`);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        console.log("WebSocket disconnected");
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       if (heroRef.current) {
@@ -69,7 +236,6 @@ function Menyu() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  /** Orders va dishes ma’lumotlarini olish **/
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -78,30 +244,32 @@ function Menyu() {
           axios.get(`${API_BASE}/product`),
           axios.get(`${API_BASE}/order`),
         ]);
-        setDishes(productsRes.data || []);
-        const allOrders = ordersRes.data || [];
+        const products = Array.isArray(productsRes.data) ? productsRes.data : [];
+        const allOrders = Array.isArray(ordersRes.data) ? ordersRes.data.map(order => ({
+          ...order,
+          orderItems: Array.isArray(order.orderItems) ? order.orderItems : []
+        })) : [];
+        
+        console.log("API Products Response:", products);
+        console.log("API Orders Response:", allOrders);
+        
+        setDishes(products);
+        await checkAllOrdersCompletion(allOrders);
 
-        // Buyurtma statuslarini tekshirish va avtomatik yangilash (agar kerak bo‘lsa)
-        try {
-          await checkAllOrdersCompletion(allOrders);
-        } catch (err) {
-          console.error("Order completion check error:", err);
-        }
-
-        // Yangilangan orders
         const updatedOrdersRes = await axios.get(`${API_BASE}/order`);
-        const updatedOrders = updatedOrdersRes.data || [];
+        const updatedOrders = Array.isArray(updatedOrdersRes.data) ? updatedOrdersRes.data.map(order => ({
+          ...order,
+          orderItems: Array.isArray(order.orderItems) ? order.orderItems : []
+        })) : [];
         setOrders(updatedOrders);
 
-        // Faqat READY statusidagi itemlar bor buyurtmalar
-        const readyOrders = updatedOrders.filter((o) =>
-          o.status === "READY" &&
-          o.orderItems.some((oi) => oi.status === "READY")
+        const readyOrders = updatedOrders.filter(
+          (o) => o.status === "READY" && o.orderItems.some((oi) => oi.status === "READY")
         );
         setZakazlar(readyOrders);
       } catch (err) {
-        console.error("Ma’lumotni yuklash xatosi:", err);
-        showToastMessage("Ma’lumotlar yuklanmadi", "error");
+        console.error("Ma'lumotni yuklash xatosi:", err);
+        showToastMessage("Ma'lumotlar yuklanmadi", "error");
         setError(err.message);
       } finally {
         setLoading(false);
@@ -110,26 +278,28 @@ function Menyu() {
     fetchData();
   }, []);
 
-  /** Order statusini yangilash **/
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const response = await axios.put(
         `${API_BASE}/order/${orderId}`,
         { status: newStatus },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
+      if (socketRef.current) {
+        socketRef.current.emit("update_order_status", { orderId, status: newStatus });
+      }
       return response.data;
     } catch (error) {
       if (error.response?.status === 404) {
-        // Alternate routelar…
         try {
           const altResponse = await axios.patch(
             `${API_BASE}/orders/${orderId}/status`,
             { status: newStatus },
             { headers: { "Content-Type": "application/json" } }
           );
+          if (socketRef.current) {
+            socketRef.current.emit("update_order_status", { orderId, status: newStatus });
+          }
           return altResponse.data;
         } catch (e2) {
           const orderResponse = await axios.get(`${API_BASE}/order/${orderId}`);
@@ -139,6 +309,9 @@ function Menyu() {
             { ...orderData, status: newStatus },
             { headers: { "Content-Type": "application/json" } }
           );
+          if (socketRef.current) {
+            socketRef.current.emit("update_order_status", { orderId, status: newStatus });
+          }
           return updateResponse.data;
         }
       } else {
@@ -147,7 +320,6 @@ function Menyu() {
     }
   };
 
-  /** Bitta order ichidagi item statusini yangilash **/
   const updateOrderItemStatus = async (orderItemId, newStatus) => {
     try {
       let response;
@@ -166,64 +338,19 @@ function Menyu() {
           throw e1;
         }
       }
-
-      // Zakazlar ro‘yxatida yangilash
-      setZakazlar((prev) =>
-        prev.map((order) => {
-          const updatedItems = order.orderItems.map((it) =>
-            it.id === orderItemId ? { ...it, status: newStatus } : it
-          );
-          return order.orderItems.some((it) => it.id === orderItemId)
-            ? { ...order, orderItems: updatedItems }
-            : order;
-        })
-      );
-
-      // Orders ro‘yxatida yangilash va kerak bo‘lsa COMPLETED qilib belgilash
-      setOrders((prevOrders) =>
-        prevOrders.map((order) => {
-          const updatedItems = order.orderItems.map((it) =>
-            it.id === orderItemId ? { ...it, status: newStatus } : it
-          );
-          if (order.orderItems.some((it) => it.id === orderItemId)) {
-            const hasActive = updatedItems.some((i) =>
-              ["PENDING", "COOKING", "READY"].includes(i.status)
-            );
-            return {
-              ...order,
-              orderItems: updatedItems,
-              status: !hasActive && updatedItems.length > 0 ? "COMPLETED" : order.status,
-            };
-          }
-          return order;
-        })
-      );
-
-      // Xabar ko'rsatish
-      const parentOrder = orders.find((o) =>
-        o.orderItems.some((it) => it.id === orderItemId)
-      );
-      if (parentOrder) {
-        const remaining = parentOrder.orderItems.filter((it) =>
-          it.id !== orderItemId && it.status === "READY"
-        );
-        if (remaining.length > 0) {
-          showToastMessage(
-            `✅ Mahsulot yetkazildi. Stol ${parentOrder.table.number}da ${remaining.length} ta taom qolmoqda.`
-          );
-        } else {
-          showToastMessage(
-            `✅ Stol ${parentOrder.table.number} - barcha taomlar yetkazildi! Zakaz yakunlandi.`
-          );
-        }
+      if (socketRef.current) {
+        socketRef.current.emit("update_order_item_status", {
+          itemId: orderItemId,
+          status: newStatus,
+        });
       }
+      showToastMessage("Status yangilandi!");
     } catch (err) {
       console.error("Order item status yangilash xatosi:", err);
       showToastMessage("Status yangilashda xatolik yuz berdi", "error");
     }
   };
 
-  /** Barcha orderlarni avtomatik COMPLETED ga tekshirish **/
   const checkAllOrdersCompletion = async (ordersList) => {
     const promises = [];
     ordersList.forEach((order) => {
@@ -249,7 +376,6 @@ function Menyu() {
     }
   };
 
-  /** Taom sonini + / - qilish **/
   const changeCount = (dishId, delta) => {
     setOrderCounts((prev) => {
       const newCount = (prev[dishId] || 0) + delta;
@@ -258,200 +384,164 @@ function Menyu() {
     });
   };
 
-  /** Buyurtmalarni olish (alohida, agar kerak bo‘lsa) **/
-  const fetchOrders = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/order`);
-      setOrders(response.data || []);
-    } catch (err) {
-      console.error("Buyurtmalarni olishda xatolik:", err);
-      showToastMessage("Buyurtmalarni olishda xatolik yuz berdi", "error");
-    }
-  };
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-const handleAddItem = () => {
-  if (!editingOrder) return;
-  const { productId, count } = newItem;
-  if (!productId || count <= 0) {
-    alert("Iltimos, taom tanlang va sonini to'g'ri kiriting.");
-    return;
-  }
-  
-  const prod = dishes.find((p) => p.id === Number(productId));
-  if (!prod) {
-    alert("Taom topilmadi.");
-    return;
-  }
-
-  // Yangi mahsulot ob'ektini yaratish - ID bermaslik!
-  const newOrderItem = {
-    // id yo'q - bu yangi mahsulot ekanligini bildiradi
-    productId: Number(prod.id),
-    product: prod, // Product ma'lumotlarini qo'shamiz
-    count: Number(count),
-    status: "PENDING", // Yangi mahsulot doim PENDING
-    isNew: true // Bu yangi qo'shilgan mahsulot ekanligini belgilash uchun
-  };
-
-  // EditingOrder ga qo'shish
-  setEditingOrder(prev => ({
-    ...prev,
-    orderItems: [...prev.orderItems, newOrderItem]
-  }));
-
-  // Formani tozalash
-  setNewItem({ productId: "", count: 1 });
-  showToastMessage("Yangi taom qo'shildi (PENDING status bilan)");
-};
-
-/** Buyurtmani saqlash - faqat yangi mahsulotlar PENDING bo'ladi **/
-const handleSaveOrder = async () => {
-  if (!editingOrder) return;
-
-  try {
-    // Mahsulotlarni qayta ishlash
-    const itemsPayload = editingOrder.orderItems.map((item) => {
-      return {
-        id: item.id || null, // Mavjud mahsulotlar uchun ID, yangi mahsulotlar uchun null
-        productId: item.productId ?? item.product?.id,
-        count: item.count,
-        // MUHIM: Faqat yangi qo'shilgan mahsulotlar (id yo'q yoki isNew=true) PENDING bo'ladi
-        // Mavjud mahsulotlarning statusini o'zgartirmaslik
-        status: !item.id || item.isNew ? "PENDING" : item.status
-      };
-    });
-
-    // Buyurtma statusini aniqlash
-    let orderStatus = editingOrder.status;
-    
-    // Faqat yangi mahsulot qo'shilgan bo'lsa va buyurtma tugallangan bo'lsa, uni qayta faollashtirish
-    const hasNewItems = editingOrder.orderItems.some(item => !item.id || item.isNew);
-    
-    if (hasNewItems) {
-      if (editingOrder.status === "COMPLETED") {
-        orderStatus = "COOKING"; // Tugallangan buyurtmaga yangi mahsulot qo'shilsa, uni qayta cooking qilish
-      } else if (editingOrder.status === "READY") {
-        orderStatus = "COOKING"; // Ready buyurtmaga yangi mahsulot qo'shilsa, uni cooking qilish
-      }
-      // Agar status PENDING yoki COOKING bo'lsa, o'zgartirishga hojat yo'q
+  const handleAddItem = () => {
+    if (!editingOrder) return;
+    const { productId, count } = newItem;
+    if (!productId || count <= 0) {
+      alert("Iltimos, taom tanlang va sonini to'g'ri kiriting.");
+      return;
     }
 
-    // Yuboriladigan payload
-    const payload = {
-      products: itemsPayload,
-      status: orderStatus,
+    const prod = dishes.find((p) => p.id === Number(productId));
+    if (!prod) {
+      alert("Taom topilmadi.");
+      return;
+    }
+
+    const newOrderItem = {
+      productId: Number(prod.id),
+      product: prod,
+      count: Number(count),
+      status: "PENDING",
+      isNew: true,
     };
 
-    console.log("Yuborilayotgan payload:", JSON.stringify(payload, null, 2));
+    setEditingOrder((prev) => ({
+      ...prev,
+      orderItems: [...prev.orderItems, newOrderItem],
+    }));
 
-    // Serverga so'rov yuborish
-    const response = await axios.put(
-      `${API_BASE}/order/${editingOrder.id}`,
-      payload,
-      { headers: { "Content-Type": "application/json" } }
-    );
+    setNewItem({ productId: "", count: 1 });
+    showToastMessage("Yangi taom qo'shildi (PENDING status bilan)");
+  };
 
-    console.log("Save response:", response.data);
+  const handleSaveOrder = async () => {
+    if (!editingOrder) return;
 
-    // Orders ro'yxatini yangilash
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === editingOrder.id
-          ? {
-              ...o,
-              status: orderStatus,
-              orderItems: response.data.orderItems || editingOrder.orderItems.map(item => ({
-                ...item,
-                status: !item.id || item.isNew ? "PENDING" : item.status
-              })),
-            }
-          : o
-      )
-    );
+    try {
+      const itemsPayload = editingOrder.orderItems.map((item) => ({
+        id: item.id || null,
+        productId: item.productId ?? item.product?.id,
+        count: item.count,
+        status: !item.id || item.isNew ? "PENDING" : item.status,
+      }));
 
-    // Tahrirlanayotgan buyurtmani yangilash
-    setEditingOrder((prev) =>
-      prev && { 
-        ...prev, 
-        status: orderStatus,
-        orderItems: (response.data.orderItems || prev.orderItems).map(item => ({
-          ...item,
-          isNew: undefined // isNew flagini olib tashlash
-        }))
+      let orderStatus = editingOrder.status;
+      const hasNewItems = editingOrder.orderItems.some((item) => !item.id || item.isNew);
+
+      if (hasNewItems) {
+        if (editingOrder.status === "COMPLETED" || editingOrder.status === "READY") {
+          orderStatus = "COOKING";
+        }
       }
-    );
 
-    showToastMessage("Buyurtma saqlandi - faqat yangi qo'shilgan mahsulotlar PENDING statusida");
-    closeEditModal();
-  } catch (err) {
-    console.error("Save error:", err);
-    setError("Buyurtma saqlashda xato yuz berdi");
-  }
-};
+      const payload = {
+        products: itemsPayload,
+        status: orderStatus,
+      };
 
-  /** Buyurtmani tahrirlash uchun tayyorlash **/
+      const response = await axios.put(
+        `${API_BASE}/order/${editingOrder.id}`,
+        payload,
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      if (socketRef.current) {
+        socketRef.current.emit("update_order_status", {
+          orderId: editingOrder.id,
+          status: orderStatus,
+        });
+      }
+
+      setEditingOrder((prev) =>
+        prev && {
+          ...prev,
+          status: orderStatus,
+          orderItems: (response.data.orderItems || prev.orderItems).map((item) => ({
+            ...item,
+            isNew: undefined,
+          })),
+        }
+      );
+
+      showToastMessage("Buyurtma saqlandi!");
+      closeEditModal();
+    } catch (err) {
+      console.error("Save error:", err);
+      setError("Buyurtma saqlashda xato yuz berdi");
+      showToastMessage("Buyurtma saqlashda xato yuz berdi", "error");
+    }
+  };
+
   const handleEditOrder = useCallback((order) => {
-    setEditingOrder({ ...order, orderItems: [...order.orderItems] });
+    setEditingOrder({ ...order, orderItems: Array.isArray(order.orderItems) ? [...order.orderItems] : [] });
     setShowEditModal(true);
     setNewItem({ productId: "", count: 1 });
     setError(null);
   }, []);
 
-
-  /** Buyurtma ichidan taom o‘chirish **/
   const handleRemoveItem = (itemId) => {
     setEditingOrder((prev) => ({
       ...prev,
       orderItems: prev.orderItems.filter((it) => it.id !== itemId),
     }));
+    if (socketRef.current) {
+      socketRef.current.emit("orderItemDeleted", { id: itemId });
+    }
     showToastMessage("Taom o'chirildi!");
   };
 
-  /** Tayyor volgan (READY) buyurtmalarni yetkazish uchun view **/
   const renderShareView = () => {
     const readyItemsByTable = {};
     orders.forEach((order) => {
-      const readyItems = order.orderItems.filter(
-        (oi) => oi.status === "READY"
-      );
+      if (!order.orderItems) {
+        console.warn(`Order ${order.id} has no orderItems:`, order);
+        return;
+      }
+      const readyItems = order.orderItems.filter((oi) => oi.status === "READY");
       if (!readyItems.length) return;
-      const tableNumber = order.table.number;
+      const tableNumber = order.table?.number || "N/A";
       if (!readyItemsByTable[tableNumber]) {
         readyItemsByTable[tableNumber] = {
           tableNumber,
           orderId: order.id,
           items: [],
           totalPrice: 0,
+          table: order.table,
         };
       }
       readyItems.forEach((oi) => {
         readyItemsByTable[tableNumber].items.push({ ...oi, orderId: order.id });
-        readyItemsByTable[tableNumber].totalPrice +=
-          (oi.product?.price || 0) * oi.count;
+        readyItemsByTable[tableNumber].totalPrice += (oi.product?.price || 0) * oi.count;
       });
     });
+
     if (!Object.keys(readyItemsByTable).length) {
-      return <p className="no-orders">🚫 READY statusdagi zakazlar yo'q</p>;
+      return (
+        <p className="no-orders">
+          <XCircle size={20} className="icon" /> Tayor zakazlar yo'q
+        </p>
+      );
     }
+
     return Object.values(readyItemsByTable).map((tg) => (
       <div
         key={`table-${tg.tableNumber}`}
         className="zakaz-card"
         style={{ marginBottom: "1rem" }}
       >
-        <h3 className="zakaz-title">🪑 Stol raqami: {tg.tableNumber}</h3>
+        <h3 className="zakaz-title">
+          <Armchair size={20} className="icon" /> Stol raqami: {tg.table?.number || "N/A"}
+        </h3>
         <ul>
           {tg.items.map((orderItem) => (
             <li key={orderItem.id} style={{ marginBottom: "0.5rem" }}>
-              <strong>{orderItem.product?.name || "Noma'lum taom"}</strong> -{" "}
-              {orderItem.count} dona
+              <div style={{display:'flex', alignItems:'center',gap:'30px'}}>
+              <strong style={{color:'#000'}}>{orderItem.product?.name || "Noma'lum taom"}</strong> 
+              <strong style={{color:'#fff',background:'#000',padding:'15px',borderRadius:'30px'}}>  {orderItem.count} dona</strong>
+              </div>
               <button
-                onClick={() =>
-                  updateOrderItemStatus(orderItem.id, "COMPLETED")
-                }
+                onClick={() => updateOrderItemStatus(orderItem.id, "COMPLETED")}
                 className="complete-btn"
                 style={{
                   marginLeft: "10px",
@@ -462,29 +552,37 @@ const handleSaveOrder = async () => {
                   border: "none",
                   borderRadius: "4px",
                   fontSize: "12px",
+                  display:'flex',
+                  alignItems:'center',
+                  gap:'5px'
                 }}
               >
-                ✅ Yetkazildi
+                <CheckCircle size={16} className="icon" /> Yetkazildi
               </button>
             </li>
           ))}
         </ul>
         <div className="total-section">
           <p>
-            <strong>💵 Umumiy narx: {calculateTotalPrice(tg.items)}</strong>
+            <strong style={{display:'flex',alignItems:'center',gap:'5px'}}>
+              <DollarSign size={20} className="icon" /> Umumiy narx: {calculateTotalPrice(tg.items)}
+            </strong>
           </p>
           <p>
-            <strong>📦 Status: READY</strong>
+            <strong style={{display:'flex',alignItems:'center',gap:'5px'}}>
+              <Package size={20} className="icon" /> Status: READY
+            </strong>
           </p>
           <p>
-            <strong>📊 Taomlar soni: {tg.items.length}</strong>
+            <strong style={{display:'flex',alignItems:'center',gap:'5px'}}>
+              <BarChart size={20} className="icon" /> Taomlar soni: {tg.items.length}
+            </strong>
           </p>
         </div>
       </div>
     ));
   };
 
-  /** Menu yoki Zakaz yaratish yoki Edit view render qismi **/
   if (loading) return <div className="loading">Yuklanmoqda...</div>;
   if (error) {
     return (
@@ -496,14 +594,11 @@ const handleSaveOrder = async () => {
     );
   }
 
-  const totalItems = Object.values(orderCounts).reduce(
-    (sum, count) => sum + count,
-    0
-  );
+  const totalItems = Object.values(orderCounts).reduce((sum, count) => sum + count, 0);
 
   const uniqueCategories = Array.from(
     new Map(
-      dishes
+      (Array.isArray(dishes) ? dishes : [])
         .filter((p) => p.category !== null)
         .map((p) => [p.category.id, p.category])
     ).values()
@@ -522,22 +617,11 @@ const handleSaveOrder = async () => {
   return (
     <div className="divManyu">
       <div className="content">
-        {/* Hero section */}
         <div ref={heroRef} className="hero-section">
           <div className="overlay" />
-          <div className="steam steam1" />
-          <div className="steam steam2" />
-          <div className="steam steam3" />
           <div className="hero-content">
             <h1>O'zbek</h1>
-            <h1 className="title-highlight">
-              <img
-                src="./achiq.png"
-                alt="🇺🇿"
-                className="icon-hero"
-              />
-              MILLIY TAOMLARI
-            </h1>
+            <h1 className="title-highlight">MILLIY TAOMLARI</h1>
             <p className="subtitle">Har bir taomda mehr, mazza va an'anaviylik</p>
             <div>
               <span style={{ color: "black" }}>Ofitsant: </span>
@@ -548,95 +632,84 @@ const handleSaveOrder = async () => {
           </div>
         </div>
 
-        {/* Filter va view tanlash tugmalari */}
-        <div className={`btttnss ${isSticky ? "fixed margin-top" : ""}`}>
+        <div className={`btttnss ${isSticky ? "fixed" : ""}`}>
           <div className="btnDiv">
-            <button
-              className={view === "menu" ? "CatButton active" : "CatButton"}
-              onClick={() => setView("menu")}
-            >
-              Taomlar menyusi
-            </button>
-            <button
-              className={view === "order" ? "CatButton active" : "CatButton"}
-              onClick={() => setView("order")}
-            >
-              Zakaz yaratish
-            </button>
-            <button
-              className={view === "share" ? "CatButton active" : "CatButton"}
-              onClick={() => setView("share")}
-            >
-              Zakazni klentga yetkazish
-            </button>
-            <button
-              className={view === "edit" ? "CatButton active" : "CatButton"}
-              onClick={() => setView("edit")}
-            >
-              Zakazni tahrirlash
-            </button>
-          </div>
-
-          {(view === "menu" || view === "order") && (
-            <div className="count-controls">
-              <button
-                className={`category-btn ${
-                  selectedCategory === "Barchasi" ? "active" : ""
-                }`}
-                onClick={() => setSelectedCategory("Barchasi")}
-              >
-                Barchasi
-              </button>
-              {uniqueCategories.map((category) => (
-                <button
-                  key={category.id}
-                  className={`category-btn ${
-                    selectedCategory === category.name ? "active" : ""
-                  }`}
-                  onClick={() => setSelectedCategory(category.name)}
-                >
-                  {category.name}
+            <header className="headdderr">
+              <h3>O'zbek Milliy Taomlari</h3>
+              <div className="navigation-container">
+                <button className="arrow-btn left-arrow" onClick={handlePrevious}>
+                  ‹
                 </button>
-              ))}
-            </div>
-          )}
+                <div className="center-button-container">
+                  <button
+                    key={currentButton.id}
+                    className="CatButton center-button active"
+                    onClick={() => setView(currentButton.id)}
+                  >
+                    {currentButton.text}
+                  </button>
+                </div>
+                <button className="arrow-btn right-arrow" onClick={handleNext}>
+                  ›
+                </button>
+              </div>
+            </header>
+          </div>
         </div>
 
-        {/* EDIT VIEW */}
+        <img
+          onClick={() => navigate("/logout")}
+          className="exit-icon"
+          src={exit}
+          alt="exit"
+        />
+
         {view === "edit" && (
           <div>
-            <h2>Buyurtmalarni tahrirlash</h2>
-            {filteredOrders.filter((item) =>
-              ["PENDING", "COOKING", "READY", "COMPLETED"].includes(item.status)
-            ).length === 0 ? (
-              <p className="no-orders">🚫 Buyurtmalar yo'q</p>
+            <h2 style={{ color: "#1a1a2e", textAlign: "center" }}>
+              Buyurtmalarni tahrirlash
+            </h2>
+            {filteredOrders
+              .filter((item) =>
+                ["PENDING", "COOKING", "READY", "COMPLETED"].includes(item.status)
+              )
+              .length === 0 ? (
+              <p className="no-orders">
+                <XCircle size={20} className="icon" /> Buyurtmalar yo'q
+              </p>
             ) : (
               filteredOrders
                 .filter((item) =>
-                  ["PENDING", "COOKING", "READY", "COMPLETED"].includes(
-                    item.status
-                  )
+                  ["PENDING", "COOKING", "READY", "COMPLETED"].includes(item.status)
                 )
                 .map((item) => (
                   <div key={item.id} className="zakaz-card" style={{ marginBottom: "1rem" }}>
                     <h3 className="zakaz-title">
-                      🪑 Stol raqami: {item.table.number}
+                      <Armchair size={20} className="icon" /> Stol raqami: {item.table?.number || "—"}
                     </h3>
-                    <ul>
-                      {item.orderItems.map((orderItem, idx) => (
-                        <li key={idx}>
+                    {item.orderItems?.map((orderItem) => (
+                      <ul key={orderItem.id}>
+                        <li style={{ marginBottom: "0.5rem", color: "#1a1a2e" }}>
                           {orderItem.product?.name || "Noma'lum"} - {orderItem.count} dona
                         </li>
-                      ))}
-                    </ul>
-                    <p>💵 Umumiy narx: {calculateTotalPrice(item.orderItems)} so'm</p>
-                    <p>📦 Status: {item.status}</p>
+                      </ul>
+                    )) || (
+                      <p className="no-orders">
+                        <XCircle size={20} className="icon" /> Taomlar yo'q
+                      </p>
+                    )}
+                    <p style={{ color: "black" }}>
+                      <DollarSign size={20} className="icon" /> Umumiy narx: {calculateTotalPrice(item.orderItems || [])} so'm
+                    </p>
+                    <p style={{ color: "black" }}>
+                      <Package size={20} className="icon" /> Status: {item.status}
+                    </p>
                     <button
                       className="order-card__edit-btn"
-                      onClick={() => handleEditOrder(item)} // endi “order” emas “item”
+                      onClick={() => handleEditOrder(item)}
                       title="Tahrirlash"
                     >
-                      ✏️ Tahrirlash
+                      <Pencil size={16} className="icon" /> Tahrirlash
                     </button>
                   </div>
                 ))
@@ -644,15 +717,15 @@ const handleSaveOrder = async () => {
           </div>
         )}
 
-        {/* SHARE VIEW (READY status bo‘yicha) */}
         {view === "share" && (
           <div>
-            <h2>Zakazlarni yetkazish</h2>
+            <h2 style={{ color: "#1a1a2e", textAlign: "center" }}>
+              Zakazlarni yetkazish
+            </h2>
             {renderShareView()}
           </div>
         )}
 
-        {/* MENU VIEW */}
         {view === "menu" && (
           <section className="menu-section">
             <h2 className="menu-title">Menyu</h2>
@@ -664,10 +737,8 @@ const handleSaveOrder = async () => {
                     <h3>{d.name}</h3>
                     <p>⏱ {d.date} daqiqa | 🏷 {d.category?.name}</p>
                     <p className="price">
-                      {d.price
-                        .toString()
-                        .replace(/\B(?=(\d{3})+(?!\d))/g, " ")}{" "}
-                      so'm
+                      <DollarSign size={16} className="icon" />
+                      {d.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} so'm
                     </p>
                   </div>
                 </div>
@@ -676,7 +747,6 @@ const handleSaveOrder = async () => {
           </section>
         )}
 
-        {/* ORDER VIEW (zakaz yaratish) */}
         {view === "order" && (
           <section className="menu-section">
             <div className="menu-grid">
@@ -686,10 +756,8 @@ const handleSaveOrder = async () => {
                   <div className="info">
                     <h3>{d.name}</h3>
                     <p className="price">
-                      {d.price
-                        .toString()
-                        .replace(/\B(?=(\d{3})+(?!\d))/g, " ")}{" "}
-                      so'm
+                      <DollarSign size={16} className="icon" />
+                      {d.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} so'm
                     </p>
                     <div className="count-controls">
                       <button
@@ -719,16 +787,13 @@ const handleSaveOrder = async () => {
           </section>
         )}
 
-        {/* EDIT MODAL */}
         {showEditModal && editingOrder && (
           <div className="modal-overlay" onClick={closeEditModal}>
             <div className="modal1" onClick={(e) => e.stopPropagation()}>
               <div className="modal__header">
-                <h2 className="modal__title">
-                  Buyurtma №{editingOrder.id} ni tahrirlash
-                </h2>
+                <h2 className="modal__title">Buyurtma №{editingOrder.id} ni tahrirlash</h2>
                 <button className="modal__close-btn" onClick={closeEditModal}>
-                  ✖️
+                  X
                 </button>
               </div>
 
@@ -738,12 +803,10 @@ const handleSaveOrder = async () => {
                   <h3>Joriy taomlar:</h3>
                   {editingOrder.orderItems.length ? (
                     <div className="modal__items-list">
-                      {editingOrder.orderItems.map((item) => (
-                        <div className="modal__item" key={item.id}>
+                      {editingOrder.orderItems.map((item, index) => (
+                        <div className="modal__item" key={item.id || `item-${index}`}>
                           <img
-                            src={`${API_BASE}${
-                              item.product?.image || "/placeholder-food.jpg"
-                            }`}
+                            src={`${API_BASE}${item.product?.image || "/placeholder-food.jpg"}`}
                             alt={item.product?.name}
                             className="modal__item-img"
                             onError={(e) => {
@@ -756,6 +819,7 @@ const handleSaveOrder = async () => {
                             </span>
                             <span className="modal__item-details">
                               Soni: {item.count} |{" "}
+                              <DollarSign size={16} className="icon" />
                               {(item.product?.price || 0)
                                 .toString()
                                 .replace(/\B(?=(\d{3})+(?!\d))/g, " ")}{" "}
@@ -772,7 +836,9 @@ const handleSaveOrder = async () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="modal__empty">Taomlar yo'q.</p>
+                    <p className="modal__empty">
+                      <XCircle size={20} className="icon" /> Taomlar yo'q.
+                    </p>
                   )}
                 </div>
 
@@ -783,20 +849,14 @@ const handleSaveOrder = async () => {
                       className="modal__select"
                       value={newItem.productId}
                       onChange={(e) =>
-                        setNewItem({
-                          ...newItem,
-                          productId: e.target.value,
-                        })
+                        setNewItem({ ...newItem, productId: e.target.value })
                       }
                     >
                       <option value="">Taom tanlang</option>
                       {dishes.map((product) => (
                         <option key={product.id} value={product.id}>
                           {product.name} (
-                          {product.price
-                            .toString()
-                            .replace(/\B(?=(\d{3})+(?!\d))/g, " ")}{" "}
-                          so'm)
+                          {product.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} so'm)
                         </option>
                       ))}
                     </select>
@@ -832,6 +892,7 @@ const handleSaveOrder = async () => {
               <div className="modal__footer">
                 <div className="modal__total">
                   Jami:{" "}
+                  <DollarSign size={16} className="icon" />
                   {calculateTotalPrice(editingOrder.orderItems)
                     .toString()
                     .replace(/\B(?=(\d{3})+(?!\d))/g, " ")}{" "}
@@ -857,15 +918,6 @@ const handleSaveOrder = async () => {
           </div>
         )}
 
-        {/* EXIT ICON */}
-        <img
-          onClick={() => navigate("/logout")}
-          className="exit-icon"
-          src={exit}
-          alt="exit"
-        />
-
-        {/* PLACE ORDER MODAL */}
         {showModal && (
           <Modal
             orderCounts={orderCounts}
@@ -878,12 +930,15 @@ const handleSaveOrder = async () => {
           />
         )}
 
-        {/* SUCCESS MODAL */}
         {showSuccessModal && (
           <SuccessModal
             onClose={() => setShowSuccessModal(false)}
-            onSuccess={(isValid) => {
+            onSuccess={(isValid, orderData) => {
               if (isValid) {
+                socketRef.current.emit("create_order", {
+                  ...orderData,
+                  restaurantId: RESTAURANT_ID,
+                });
                 setOrderCounts({});
                 setShowSuccessModal(false);
                 showToastMessage("Buyurtma muvaffaqiyatli yuborildi!");
@@ -896,13 +951,8 @@ const handleSaveOrder = async () => {
           />
         )}
 
-        {/* TOAST */}
         {showToast && (
-          <div
-            className={`toast ${
-              toastType === "error" ? "toast-error" : "toast-success"
-            }`}
-          >
+          <div className={`toast ${toastType === "error" ? "toast-error" : "toast-success"}`}>
             {toastMessage}
           </div>
         )}

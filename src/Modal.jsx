@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { ClipboardList, Utensils, Check, X } from 'lucide-react';
 import './Modal.css';
 
 function Modal({ orderCounts, dishes, onClose, onConfirm }) {
@@ -16,7 +17,6 @@ function Modal({ orderCounts, dishes, onClose, onConfirm }) {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
     
     return () => {
@@ -89,7 +89,10 @@ function Modal({ orderCounts, dishes, onClose, onConfirm }) {
         style={modalStyle}
       >
         <div className="modal-header">
-          <h2 className="modal-title">📋 Buyurtma Tafsilotlari</h2>
+          <h2 className="modal-title">
+            <ClipboardList size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            Buyurtma Tafsilotlari
+          </h2>
         </div>
 
         <div className="order-content">
@@ -109,7 +112,7 @@ function Modal({ orderCounts, dishes, onClose, onConfirm }) {
               ))
             ) : (
               <div className="empty-order">
-                <span className="empty-icon">🍽️</span>
+                <Utensils size={48} className="empty-icon" style={{ color: '#ccc', marginBottom: '10px' }} />
                 <p>Hozircha buyurtmalar mavjud emas</p>
               </div>
             )}
@@ -124,11 +127,13 @@ function Modal({ orderCounts, dishes, onClose, onConfirm }) {
         </div>
 
         <div className="modal-actions">
-          <button className="btn-secondary" onClick={onClose}>
-            Bekor qilish
-          </button>
           <button className="btn-primary" onClick={onConfirm}>
-            ✓ Tasdiqlash
+            <Check size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Tasdiqlash
+          </button>
+          <button className="btn-secondary" onClick={onClose}>
+            <X size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Bekor qilish
           </button>
         </div>
       </div>
